@@ -1,0 +1,47 @@
+#!/usr/bin/env ruby
+
+$:.push(File.expand_path(File.join(__FILE__, '..', '..', 'lib')))
+
+require 'methadone'
+require 'pagerduty'
+require 'time'
+require 'net/smtp'
+require 'toml'
+
+include Methadone::Main
+include Methadone::CLILogging
+
+main do |oncall_date|
+  @config = TOML.load_file('config.toml')['email_reminder']
+  raise "Could not load credentials file at config.toml" if @config.nil? || @config.empty?
+  oncall_date  = oncall_date ? Time.parse(oncall_date) : Time.now
+  pagerduty = Pagerduty.new
+  oncall_staff = pagerduty.oncall(oncall_date)
+  oncall_staff.each do |schedule,users|
+    users.each { |email| send_email(email) }
+  end
+end
+
+def send_email(address)
+  message =<<MESSAGE_END
+From: #{@config['from']}
+To: #{address}
+Subject: #{@config['subject']}
+MIME-Version: 1.0
+Content-type: text
+
+#{@config['message']}
+MESSAGE_END
+
+  Net::SMTP.start('localhost') do |smtp|
+    puts "Sending email to #{address}"
+    smtp.send_message(message, @config['from'], "#{address}")
+  end
+end
+
+description "Takes an optional date (defaults to today) in the form of 'YYYY-MM-DD' and
+sends an email reminder to whoever was on call."
+
+arg :oncall_date, :optional
+
+go!

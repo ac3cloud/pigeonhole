@@ -1,0 +1,34 @@
+[influxdb]
+  host     = "1.2.3.4"
+  port     = 8086
+  username = "pigeonhole"
+  password = "mypassword"
+  database = "pigeonhole"
+  series   = "pigeonhole"
+
+[pagerduty]
+  # Auth token can be given with or without the preceding 'Token token='
+  auth_token = "2731ca1f7ee10ed57311"
+  api_url    = "https://mycompany.pagerduty.com/api/v1"
+  time_zone  = "Sydney"
+
+[pagerduty.schedules]
+  # These are the IDs from your PagerDuty On-Call Schedules,
+  # which when loaded from https://<companyname>.pagerduty.com/schedules
+  # are on the end of the schedule URLs
+  primary   = "B6AAE34"
+  secondary = "FD49FBD"
+
+[email_reminder]
+  from       = "pigeonhole <pigeonhole@example.com>"
+  subject    = "You were recently on call, please fill in the report"
+  message    = """
+Hi there,
+
+Thanks for your recent on call shift!
+
+In an effort to make things better, please fill in the report at:
+http://pigeonhole.example.com/
+
+Thanks!
+"""

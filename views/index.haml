@@ -1,0 +1,41 @@
+%h3#handled-incidents
+  %i.fa.fa-bullhorn
+  %span.label.label-default.count= @incidents.size
+  %span
+    alerts handled on
+    = @date
+
+%form{:action => '', :method => 'post', :role => 'form', :class => 'form', :id => 'incidents'}
+  %table#incidents-table.table.tablesorter
+    %thead
+      %tr
+        %th.id
+          \#
+        %th.incident
+          Incident
+        %th.description
+          Description
+        %th.time
+          Time
+        %th.category
+          Category
+    %tbody
+      - @incidents.each_with_index do |incident, index|
+        - id = incident['id']
+        %tr
+          %td= index + 1
+          %td
+            %a{:href => "https://bltprf.pagerduty.com/incidents/#{id}"}= id
+          %td= incident['description']
+          %td= Time.at(incident['time'])
+          %td
+            %select{:name => id, :id => id, :class => "form-control"}
+              -@categories.each do |category|
+                - display_name = category == "self recovered" ? "recovered without intervention" : category
+                - if incident['category'] && category == incident['category']
+                  %option{:value => category, :selected => true}= display_name
+                - else
+                  %option{:value => category}= display_name
+
+  %p.text-right
+    %input{:type => "submit", :value => "save", :class => "btn btn-warning"}
