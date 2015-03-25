@@ -12,42 +12,80 @@ class Pagerduty
   end
 
   def request(endpoint)
-    response = HTTParty.get(
-      endpoint,
-      headers: {
-        'Content-Type'  => 'application/json',
-        'Authorization' => @config['auth_token']
-      }
-    )
-    JSON.parse(response.body)
-  end
-
-  def incidents(start_date, finish_date=nil)
     pagination_limit  = 100
     pagination_offset = 0
-    finish_clause     = finish_date ? finish_clause = "&until=#{finish_date}" : ""
-    incidents         = []
+    result = []
     begin
-      endpoint  = "#{@config['api_url']}incidents?since=#{start_date}#{finish_clause}&time_zone=#{@config['time_zone']}&sort_by=created_on:desc&offset=#{pagination_offset}"
-      response  = request(endpoint)
-      responses = response['incidents'].count
-      debug("received #{responses} responses from pd")
-      response['incidents'].each do |incident|
-        tmp = {
-          :id           => incident['id'],
-          :created_on   => incident['created_on'],
-          :description  => incident['trigger_summary_data']['description'],
-          :incident_key => incident['incident_key'],
-          :category     => 'not set',
+      # Some endpoints have query strings already.  Detect this, and add onto the query string
+      # if it exists, or otherwise create one
+      char = endpoint.include?('?') ? '&' : '?'
+      endpoint = "#{endpoint}#{char}sort_by=created_on:desc&offset=#{pagination_offset}"
+      response = HTTParty.get(
+        endpoint,
+        headers: {
+          'Content-Type'  => 'application/json',
+          'Authorization' => 'Token token=hD4yx9TWsvR5kwEAJA1p'
         }
-        if incident['trigger_summary_data']['description'] == nil
-          # some alerts don't have a description (e.g.: website pulse), fall back on subject and service name
-          tmp[:description] = "#{incident['service']['name']}: #{incident['trigger_summary_data']['subject']}"
-        end
-        incidents << tmp
+      )
+      response = JSON.parse(response.body).values.first
+      response_count = response.count
+      debug("received #{response_count} responses from pd for #{endpoint}")
+      response.each do |r|
+        result << r
       end
       pagination_offset += pagination_limit
-    end while responses >= pagination_limit
+    end while response_count >= pagination_limit
+    result
+  end
+
+  def incidents(start_date, finish_date=nil, time_zone='Sydney')
+    finish_clause     = finish_date ? finish_clause = "&until=#{finish_date}" : ""
+    endpoint = "https://bltprf.pagerduty.com/api/v1/incidents?since=#{start_date}#{finish_clause}&time_zone=#{time_zone}"
+    response  = request(endpoint)
+    incidents = response.map do |incident|
+      tmp = {
+        :id           => incident['id'],
+        :created_on   => incident['created_on'],
+        :description  => incident['trigger_summary_data']['description'],
+        :incident_key => incident['incident_key'],
+        :category     => 'not set',
+      }
+      if incident['trigger_summary_data']['description'].nil?
+        #some alerts don't have a description (e.g.: website pulse), fall back on subject and service name
+        tmp[:description] = "#{incident['service']['name']}: #{incident['trigger_summary_data']['subject']}"
+      end
+      tmp
+    end
+    add_ack_resolve(incidents)
+  end
+
+  def add_ack_resolve(incidents)
+    incidents.each do |incident|
+      incident_id      = incident[:id]
+      log              = request("https://bltprf.pagerduty.com/api/v1/incidents/#{incident_id}/log_entries")
+      problem          = log.select {|x| x['type'] == 'trigger'}.first
+      problem_time     = Time.parse(problem['created_at'])
+      acknowledge_by   = nil
+      time_to_ack      = nil
+      time_to_resolve  = nil
+
+      if log.any? {|x| x['type'] == 'acknowledge'}
+        acknowledge      = log.select {|x| x['type'] == 'acknowledge'}.first
+        acknowledge_by   = acknowledge['agent']['email']
+        acknowledge_time = Time.parse(acknowledge['created_at'])
+        time_to_ack      = acknowledge_time - problem_time
+      end
+
+      if log.any? {|x| x['type'] == 'resolve'}
+        resolve         = log.select {|x| x['type'] == 'resolve'}.first
+        resolve_time    = Time.parse(resolve['created_at'])
+        time_to_resolve = resolve_time - problem_time
+      end
+
+      incident[:acknowledge_by]  = acknowledge_by
+      incident[:time_to_ack]     = time_to_ack
+      incident[:time_to_resolve] = time_to_resolve
+    end
     incidents
   end
 
