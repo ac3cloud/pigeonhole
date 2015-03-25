@@ -30,9 +30,7 @@ class Pagerduty
       response = JSON.parse(response.body).values.first
       response_count = response.count
       debug("received #{response_count} responses from pd for #{endpoint}")
-      response.each do |r|
-        result << r
-      end
+      response.each { |r| result << r }
       pagination_offset += pagination_limit
     end while response_count >= pagination_limit
     result
