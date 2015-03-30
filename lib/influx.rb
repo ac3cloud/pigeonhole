@@ -23,13 +23,24 @@ module Influx
 
     def insert_incident(incident)
       timeseries = @config['series']
-      existing = @influxdb.query "select id from #{timeseries} where id='#{incident[:id]}'"
-      unless existing.empty?
-        puts "Incident #{incident[:id]} is already in influxDB, skipping"
-        return
+      existing = @influxdb.query "select id, time_to_resolve from #{timeseries} where id='#{incident[:id]}'"
+      # Incidents can be in three states:
+      # Not in InfluxDB (write as new point)
+      # In InfluxDB, not resolved (re-write existing point with any new information)
+      # In InfluxDB, resolved (point is final, nothing happens)
+      if existing.empty?
+        puts "inserting #{incident}"
+        incident[:time] = Time.parse(incident[:created_on]).to_i
+      else
+        if existing[timeseries].first['time_to_resolve'].nil?
+          puts "Incident #{incident[:id]} is already in influxDB - updating"
+          incident['time'] = existing[timeseries].first['time']
+          incident['sequence_number'] = existing[timeseries].first['sequence_number']
+        else
+          puts "Incident #{incident[:id]} is already in influxDB and has been resolved - skipping"
+          return
+        end
       end
-      puts "inserting #{incident}"
-      incident[:time] = Time.parse(incident[:created_on]).to_i
       incident.delete(:created_on)
       @influxdb.write_point(timeseries, incident)
     end
