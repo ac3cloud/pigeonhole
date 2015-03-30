@@ -1,9 +1,5 @@
 $(function(){
-    $("#reload-single").click(function() {
-        window.location.href = $('#start_date')[0].value;
-    });
-
-    $("#reload-interval").click(function() {
+    $("#reload").click(function() {
         start_date = $('#start_date')[0].value;
         end_date   = $('#end_date')[0].value;
         window.location.href = '../' + start_date + '/' + end_date;

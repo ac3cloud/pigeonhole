@@ -45,23 +45,7 @@ module Influx
       @influxdb.write_point(timeseries, incident)
     end
 
-    def incidents(date=nil)
-      timeseries = @config['series']
-      unless date.nil?
-        start_date = Chronic.parse(date, :guess => false).first
-        end_date = Chronic.parse(date, :guess => false).last
-      end
-
-      # If we couldn't parse the given date, use the last 24 hours.
-      end_date = end_date.nil? ? Time.now.to_i : end_date.to_i
-      start_date = start_date.nil? ? end_date - (24 * 60 * 60) : start_date.to_i
-
-      query = "select * from #{timeseries} where time > #{start_date.to_i}s and time < #{end_date.to_i}s"
-      incidents = @influxdb.query(query)
-      incidents[timeseries] ? incidents[timeseries] : []
-    end
-
-    def breakdown_incidents(start_date=nil, end_date=nil)
+    def find_incidents(start_date=nil, end_date=nil, query_input=nil)
       timeseries = @config['series']
       start_date = Chronic.parse(start_date, :guess => false).first unless start_date.nil?
       end_date = Chronic.parse(end_date, :guess => false).last unless end_date.nil?
@@ -70,18 +54,80 @@ module Influx
       end_date = end_date.nil? ? Time.now.to_i : end_date.to_i
       start_date = start_date.nil? ? end_date - (24 * 60 * 60) : start_date.to_i
 
-      query = "select count(incident_key), incident_key from #{timeseries} where time > #{start_date}s and time < #{end_date}s group by incident_key"
-      resp = @influxdb.query(query)
-      return [] if resp.empty?
-      incidents = resp[timeseries].sort_by { |k| k["count"] }.reverse
+      # As a default, select * from the timeframe.  Otherwise, use what the input query gave us
+      query_select = 'select *'
+      if query_input && query_input[:query_select]
+        query_select = query_input[:query_select]
+      end
+      influx_query = "#{query_select} from #{timeseries} \
+                      where time > #{start_date.to_i}s and time < #{end_date.to_i}s "
+      influx_query += query_input[:conditions] if query_input && query_input[:conditions]
+      incidents = @influxdb.query(influx_query)
+      incidents[timeseries] ? incidents[timeseries] : []
+    end
+
+    def incident_frequency(start_date=nil, end_date=nil)
+      query_input = {
+        :query_select => "select count(incident_key), incident_key",
+        :conditions => "group by incident_key"
+      }
+      incidents = find_incidents(start_date, end_date, query_input).sort_by { |k| k["count"] }.reverse
+      return [] if incidents.empty?
       results = []
       incidents.each do |incident|
+        next if incident['incident_key'].nil?
         entity, check = incident['incident_key'].split(':', 2)
         results.push(
           {
             'count'  => incident['count'],
             'entity' => entity,
             'check'  => check
+          }
+        )
+      end
+      results
+    end
+
+    def alert_response(start_date=nil, end_date=nil)
+      incidents = find_incidents(start_date, end_date)
+      return [] if incidents.empty?
+      results = []
+      incidents.each do |incident|
+        next if incident['incident_key'].nil?
+        time_to_ack = incident['time_to_ack'].nil? ? 0 : (incident['time_to_ack'] / 60.0).ceil
+        time_to_resolve = incident['time_to_resolve'].nil? ? 0 : (incident['time_to_resolve'] / 60.0).ceil
+        ack_by = incident['acknowledge_by']
+        results.push(
+          {
+            'id' => incident['id'],
+            'alert_time' => incident['time'],
+            'incident_key' => incident['incident_key'].to_s.strip,
+            'ack_by' => ack_by,
+            'time_to_ack' => time_to_ack,
+            'time_to_resolve' => time_to_resolve
+          }
+        )
+      end
+      results
+    end
+
+    def noise_candidates(start_date=nil, end_date=nil)
+      query_input = {
+        :query_select => "select count(incident_key), incident_key, mean(time_to_resolve)",
+        :conditions => "and time_to_resolve < 120 group by incident_key"
+      }
+      incidents = find_incidents(start_date, end_date, query_input).sort_by { |k| k["count"] }.reverse
+      return [] if incidents.empty?
+      results = []
+      incidents.each do |incident|
+        next if incident['incident_key'].nil?
+        entity, check = incident['incident_key'].split(':', 2)
+        results.push(
+          {
+            'count'  => incident['count'],
+            'entity' => entity,
+            'check'  => check,
+            'mean_time_to_resolve' => incident['mean'].to_i
           }
         )
       end

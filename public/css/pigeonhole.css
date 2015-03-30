@@ -33,3 +33,9 @@ div#breakdownchart {
   width: 100%;
   height: 400px;
 }
+
+@media (min-width: 1200px) {
+  .container {
+    width: 1370px;
+  }
+}

@@ -2,8 +2,10 @@
   %i.fa.fa-bullhorn
   %span.label.label-default.count= @incidents.size
   %span
-    alerts handled on
-    = @date
+    alerts handled between
+    = @start_date
+    and
+    = @end_date
 
 %form{:action => '', :method => 'post', :role => 'form', :class => 'form', :id => 'incidents'}
   %table#incidents-table.table.tablesorter

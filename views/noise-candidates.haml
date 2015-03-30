@@ -1,0 +1,30 @@
+%h3#handled-incidents
+  %span
+    Alerts that recovered within 2 minutes of alerting between
+    = @start_date
+    and
+    = @end_date
+
+%form{:action => '', :method => 'post', :role => 'form', :class => 'form', :id => 'noise-candidates'}
+  %h3
+    Alert list ( total:
+    = @total
+    )
+  %table#incidents-table.table.tablesorter
+    %thead
+      %tr
+        %th.count
+          Count
+        %th.entity
+          Entity
+        %th.check
+          Check
+        %th.mean_time_to_resolve
+          Average time to resolve (s)
+    %tbody
+      - @incidents.each do |incident|
+        %tr
+          %td= incident['count']
+          %td= incident['entity']
+          %td= incident['check']
+          %td= incident['mean_time_to_resolve']
