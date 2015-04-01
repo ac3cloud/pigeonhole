@@ -2,6 +2,10 @@
   %i.fa.fa-bullhorn
   %span.label.label-default.count= @incidents.size
   %span
+  - if @start_date == @end_date
+    alerts handled on
+    = @start_date
+  - else
     alerts handled between
     = @start_date
     and

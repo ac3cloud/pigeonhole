@@ -1,5 +1,9 @@
 %h3#handled-incidents
   %span
+  - if @start_date == @end_date
+    Acknowledgement and resolution times of alerts handled on
+    = @start_date
+  - else
     Acknowledgement and resolution times of alerts handled between
     = @start_date
     and
