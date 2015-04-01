@@ -58,6 +58,9 @@
   $(function () {
     var data = #{@series}
     $('#ackresolutionchart').highcharts({
+      chart: {
+        zoomType: 'x'
+      },
       yAxis: {
           min: 0,
           title: {
@@ -71,9 +74,6 @@
           }
       },
       credits: {
-          enabled: false
-      },
-      legend: {
           enabled: false
       },
       title: {
