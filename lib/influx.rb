@@ -140,7 +140,7 @@ module Influx
       count_group_by = group_by.nil? ? '1h' : group_by
       count = find_incidents(start_date, end_date,
                 :query_select => "select count(incident_key)",
-                :conditions => "group by time(#{count_group_by})"
+                :conditions => "group by time(#{count_group_by}) fill(0)"
               ).sort_by { |k| k["count"] }.reverse
 
       {
