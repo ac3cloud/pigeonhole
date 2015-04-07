@@ -10,6 +10,7 @@ gem 'httparty'
 gem 'haml'
 gem 'chronic'
 gem 'toml-rb'
+gem 'activesupport', require: ['activesupport/core_ext/numeric/time']
 
 group :development do
   gem 'shotgun'

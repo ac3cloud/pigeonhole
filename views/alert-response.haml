@@ -61,12 +61,18 @@
       chart: {
         zoomType: 'x'
       },
-      yAxis: {
-          min: 0,
-          title: {
-              text: 'Time (min) to acknowledge or resolve alert'
-          }
-      },
+      yAxis: [{
+        min: 0,
+        opposite: true,
+        title: {
+          text: 'Number of alerts per time block'
+        }
+      }, {
+        min: 0,
+        title: {
+          text: 'Time (min) to acknowledge or resolve alert'
+        }
+      }],
       xAxis: {
           type: 'datetime',
           title: {
@@ -81,13 +87,11 @@
       },
       plotOptions: {
         series: {
-          compare: 'value',
-          turboThreshold: 2000
+          compare: 'value'
         }
       },
       tooltip: {
           shared: true,
-          valueSuffix: 'min'
       },
       series: data
     });

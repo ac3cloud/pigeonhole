@@ -2,6 +2,7 @@ require 'influxdb'
 require 'time'
 require 'chronic'
 require 'toml'
+require 'active_support/core_ext/numeric/time'
 
 module Influx
   class Db
@@ -90,7 +91,7 @@ module Influx
 
     def alert_response(start_date=nil, end_date=nil)
       incidents = find_incidents(start_date, end_date)
-      return [] if incidents.empty?
+      return {} if incidents.empty?
       results = []
       incidents.each do |incident|
         next if incident['incident_key'].nil?
@@ -98,17 +99,56 @@ module Influx
         time_to_resolve = incident['time_to_resolve'].nil? ? 0 : (incident['time_to_resolve'] / 60.0).ceil
         ack_by = incident['acknowledge_by']
         results.push(
-          {
-            'id' => incident['id'],
-            'alert_time' => incident['time'],
-            'incident_key' => incident['incident_key'].to_s.strip,
-            'ack_by' => ack_by,
-            'time_to_ack' => time_to_ack,
-            'time_to_resolve' => time_to_resolve
-          }
+          'id' => incident['id'],
+          'alert_time' => incident['time'],
+          'incident_key' => incident['incident_key'].to_s.strip,
+          'ack_by' => ack_by,
+          'time_to_ack' => time_to_ack,
+          'time_to_resolve' => time_to_resolve
         )
       end
-      results
+
+      # Only a certain number of points are meaningful.
+      # When we request data over long time periods, we show averages on the graph instead
+      # Under one week: every point
+      # Under one month: one point per hour
+      # Under one year: one point per 8 hours
+      # Over one year: one point per day
+      first, last = results.minmax_by { |x| x['alert_time'] }.map { |x| x['alert_time'] }
+      group_by = case
+      when (last - first) < 1.week
+        nil
+      when (last - first).between?(1.week, 4.weeks)
+        '1h'
+      when (last - first) < 52.weeks
+        '8h'
+      else
+        '24h'
+      end
+
+      unless group_by.nil?
+        aggregated = find_incidents(start_date, end_date,
+                      :query_select => "select mean(time_to_ack) as mean_ack, mean(time_to_resolve) as mean_resolve",
+                      :conditions => "group by time(#{group_by})"
+                    )
+        aggregated.each do |incident|
+          incident['mean_ack'] = incident['mean_ack'].nil? ? 0 : (incident['mean_ack'] / 60.0).ceil
+          incident['mean_resolve'] = incident['mean_resolve'].nil? ? 0 : (incident['mean_resolve'] / 60.0).ceil
+        end
+      end
+
+      count_group_by = group_by.nil? ? '1h' : group_by
+      count = find_incidents(start_date, end_date,
+                :query_select => "select count(incident_key)",
+                :conditions => "group by time(#{count_group_by})"
+              ).sort_by { |k| k["count"] }.reverse
+
+      {
+        :incidents => results,
+        :aggregated => aggregated,
+        :count   => count,
+        :count_group_by => count_group_by
+      }
     end
 
     def noise_candidates(start_date=nil, end_date=nil)
