@@ -36,7 +36,7 @@ class Pagerduty
     result
   end
 
-  def incidents(start_date, finish_date=nil, time_zone='Sydney')
+  def incidents(start_date, finish_date = nil, time_zone = 'Sydney')
     finish_clause     = finish_date ? finish_clause = "&until=#{finish_date}" : ""
     endpoint = "https://bltprf.pagerduty.com/api/v1/incidents?since=#{start_date}#{finish_clause}&time_zone=#{time_zone}"
     response  = request(endpoint)
@@ -47,10 +47,10 @@ class Pagerduty
         :description  => incident['trigger_summary_data']['description'],
         :incident_key => incident['incident_key'],
         :input_type   => incident['service']['name'],
-        :category     => 'not set',
+        :category     => 'not set'
       }
       if incident['trigger_summary_data']['description'].nil?
-        #some alerts don't have a description (e.g.: website pulse), fall back on subject and service name
+        # some alerts don't have a description (e.g.: website pulse), fall back on subject and service name
         tmp[:description] = "#{incident['service']['name']}: #{incident['trigger_summary_data']['subject']}"
       end
       tmp
@@ -68,14 +68,14 @@ class Pagerduty
       time_to_ack      = nil
       time_to_resolve  = nil
 
-      if log.any? {|x| x['type'] == 'acknowledge'}
-        acknowledge      = log.select {|x| x['type'] == 'acknowledge'}.first
+      if log.any? { |x| x['type'] == 'acknowledge' }
+        acknowledge      = log.select { |x| x['type'] == 'acknowledge' }.first
         acknowledge_by   = acknowledge['agent']['email']
         acknowledge_time = Time.parse(acknowledge['created_at'])
         time_to_ack      = acknowledge_time - problem_time
       end
 
-      if log.any? {|x| x['type'] == 'resolve'}
+      if log.any? { |x| x['type'] == 'resolve' }
         resolve         = log.select { |x| x['type'] == 'resolve' }.first
         resolve_time    = Time.parse(resolve['created_at'])
         time_to_resolve = resolve_time - problem_time
@@ -88,24 +88,24 @@ class Pagerduty
     incidents
   end
 
-  def oncall(given_date=nil)
+  def oncall(given_date = nil)
     given_date ||= Time.now
     schedules  = @config['schedules']
     since_date = given_date
     until_date = given_date + 24 * 60 * 60
-    #weekend?
+    # weekend?
     if since_date.saturday?
-      until_date = until_date + 24 * 60 * 60 #set to Monday
-      since_date = Time.parse("#{since_date.strftime("%F")} 09:30:00") #09:30h start
+      until_date += 24 * 60 * 60 # set to Monday
+      since_date = Time.parse("#{since_date.strftime('%F')} 09:30:00") # 09:30h start
     elsif since_date.sunday?
-      since_date = since_date - 24 * 60 * 60 #set to Saturday
-      since_date = Time.parse("#{since_date.strftime("%F")} 09:30:00") #09:30h start
+      since_date -= 24 * 60 * 60 # set to Saturday
+      since_date = Time.parse("#{since_date.strftime('%F')} 09:30:00") # 09:30h start
     else
-      since_date = Time.parse("#{since_date.strftime("%F")} 17:00:00") #17:00h start
+      since_date = Time.parse("#{since_date.strftime('%F')} 17:00:00") # 17:00h start
     end
-    until_date = Time.parse("#{until_date.strftime("%F")} 09:30:00") #09:30h end
+    until_date = Time.parse("#{until_date.strftime('%F')} 09:30:00") # 09:30h end
     oncall = {}
-    schedules.each do |name,schedule|
+    schedules.each do |name, schedule|
       endpoint = "#{@config['api_url']}schedules/#{schedule}/users?since=#{since_date.iso8601}&until=#{until_date.iso8601}"
       response = request(endpoint)
       response['users'].each do |user|

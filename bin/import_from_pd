@@ -10,11 +10,11 @@ require 'influx'
 include Methadone::Main
 include Methadone::CLILogging
 
-main do |start_date,finish_date|
+main do |start_date, finish_date|
   influxdb    = Influx::Db.new
   pagerduty   = Pagerduty.new
-  start_date  = start_date ? Time.parse(start_date).iso8601 : Time.parse("#{Time.now.strftime("%F")} 00:00:00").iso8601
-  finish_date = finish_date ? Time.parse(finish_date).iso8601 : Time.now().iso8601
+  start_date  = start_date ? Time.parse(start_date).iso8601 : Time.parse("#{Time.now.strftime('%F')} 00:00:00").iso8601
+  finish_date = finish_date ? Time.parse(finish_date).iso8601 : Time.now.iso8601
   incidents   = pagerduty.incidents(start_date, finish_date)
   incidents.each do |incident|
     influxdb.insert_incident(incident)

@@ -46,7 +46,7 @@ module Influx
       @influxdb.write_point(timeseries, incident)
     end
 
-    def find_incidents(start_date=nil, end_date=nil, query_input=nil)
+    def find_incidents(start_date = nil, end_date = nil, query_input = nil)
       timeseries = @config['series']
       start_date = Chronic.parse(start_date, :guess => false).first unless start_date.nil?
       end_date = Chronic.parse(end_date, :guess => false).last unless end_date.nil?
@@ -67,7 +67,7 @@ module Influx
       incidents[timeseries] ? incidents[timeseries] : []
     end
 
-    def incident_frequency(start_date=nil, end_date=nil)
+    def incident_frequency(start_date = nil, end_date = nil)
       query_input = {
         :query_select => "select count(incident_key), incident_key",
         :conditions => "group by incident_key"
@@ -85,7 +85,7 @@ module Influx
       }.compact
     end
 
-    def alert_response(start_date=nil, end_date=nil)
+    def alert_response(start_date = nil, end_date = nil)
       incidents = find_incidents(start_date, end_date)
       return {} if incidents.empty?
       results = incidents.map { |incident|
@@ -124,8 +124,8 @@ module Influx
 
       unless group_by.nil?
         aggregated = find_incidents(start_date, end_date,
-                      :query_select => "select mean(time_to_ack) as mean_ack, mean(time_to_resolve) as mean_resolve",
-                      :conditions => "group by time(#{group_by})"
+                                    :query_select => "select mean(time_to_ack) as mean_ack, mean(time_to_resolve) as mean_resolve",
+                                    :conditions => "group by time(#{group_by})"
                     )
         aggregated.each do |incident|
           incident['mean_ack'] = incident['mean_ack'].nil? ? 0 : (incident['mean_ack'] / 60.0).ceil
@@ -136,8 +136,8 @@ module Influx
       # However, we always want to do the count over at least one hour (or matching the aggregation above)
       count_group_by = group_by.nil? ? '1h' : group_by
       count = find_incidents(start_date, end_date,
-                :query_select => "select count(incident_key)",
-                :conditions => "group by time(#{count_group_by}) fill(0)"
+                             :query_select => "select count(incident_key)",
+                             :conditions => "group by time(#{count_group_by}) fill(0)"
               ).sort_by { |k| k["count"] }.reverse
 
       {
@@ -148,7 +148,7 @@ module Influx
       }
     end
 
-    def noise_candidates(start_date=nil, end_date=nil)
+    def noise_candidates(start_date = nil, end_date = nil)
       query_input = {
         :query_select => "select count(incident_key), incident_key, mean(time_to_resolve)",
         :conditions => "and time_to_resolve < 120 group by incident_key"
@@ -169,7 +169,7 @@ module Influx
 
     def save_categories(data)
       timeseries = @config['series']
-      data.each do |incident,category|
+      data.each do |incident, category|
         query = "select * from #{timeseries} where id = '#{incident}'"
         current_point = @influxdb.query(query)[timeseries].first
         current_point['category'] = category

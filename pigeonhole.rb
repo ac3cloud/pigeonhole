@@ -37,7 +37,7 @@ get '/:start_date/:end_date' do
     'improved',
     'self recovered',
     'needs documentation',
-    'unclear, needs discussion',
+    'unclear, needs discussion'
   ]
   @start_date = params["start_date"]
   @end_date   = params["end_date"]

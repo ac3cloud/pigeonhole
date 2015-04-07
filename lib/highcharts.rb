@@ -18,7 +18,7 @@ module HighCharts
     if opts[:aggregated]
       ack_data, resolve_data = %w(ack resolve).map { |type|
         opts[:aggregated].map { |i|
-          [ i['time'] * 1000, i["mean_#{type}"] ]
+          [i['time'] * 1000, i["mean_#{type}"]]
         }
       }.compact.sort
       ack_name = 'Average time until acknowledgement of alert'
@@ -38,7 +38,7 @@ module HighCharts
     end
 
     count_data = opts[:count].map { |i|
-      [ i['time'] * 1000, i['count'] ]
+      [i['time'] * 1000, i['count']]
     }.compact.sort
 
     [
