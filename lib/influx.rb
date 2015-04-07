@@ -61,8 +61,8 @@ module Influx
         query_select = query_input[:query_select]
       end
       influx_query = "#{query_select} from #{timeseries} \
-                      where time > #{start_date.to_i}s and time < #{end_date.to_i}s "
-      influx_query += query_input[:conditions] if query_input && query_input[:conditions]
+                      where time > #{start_date}s and time < #{end_date}s "
+      influx_query << query_input[:conditions] if query_input && query_input[:conditions]
       incidents = @influxdb.query(influx_query)
       incidents[timeseries] ? incidents[timeseries] : []
     end
@@ -74,40 +74,36 @@ module Influx
       }
       incidents = find_incidents(start_date, end_date, query_input).sort_by { |k| k["count"] }.reverse
       return [] if incidents.empty?
-      results = []
-      incidents.each do |incident|
+      incidents.map { |incident|
         next if incident['incident_key'].nil?
         entity, check = incident['incident_key'].split(':', 2)
-        results.push(
-          {
-            'count'  => incident['count'],
-            'entity' => entity,
-            'check'  => check
-          }
-        )
-      end
-      results
+        {
+          'count'  => incident['count'],
+          'entity' => entity,
+          'check'  => check
+        }
+      }.compact
     end
 
     def alert_response(start_date=nil, end_date=nil)
       incidents = find_incidents(start_date, end_date)
       return {} if incidents.empty?
-      results = []
-      incidents.each do |incident|
+      results = incidents.map { |incident|
         next if incident['incident_key'].nil?
         time_to_ack = incident['time_to_ack'].nil? ? 0 : (incident['time_to_ack'] / 60.0).ceil
         time_to_resolve = incident['time_to_resolve'].nil? ? 0 : (incident['time_to_resolve'] / 60.0).ceil
         ack_by = incident['acknowledge_by']
-        results.push(
+        {
           'id' => incident['id'],
           'alert_time' => incident['time'],
           'incident_key' => incident['incident_key'].to_s.strip,
           'ack_by' => ack_by,
           'time_to_ack' => time_to_ack,
           'time_to_resolve' => time_to_resolve
-        )
-      end
+        }
+      }.compact
 
+      # The rest of this function is to make the graph work:
       # Only a certain number of points are meaningful.
       # When we request data over long time periods, we show averages on the graph instead
       # Under one week: every point
@@ -137,6 +133,7 @@ module Influx
         end
       end
 
+      # However, we always want to do the count over at least one hour (or matching the aggregation above)
       count_group_by = group_by.nil? ? '1h' : group_by
       count = find_incidents(start_date, end_date,
                 :query_select => "select count(incident_key)",
@@ -144,9 +141,9 @@ module Influx
               ).sort_by { |k| k["count"] }.reverse
 
       {
-        :incidents => results,
-        :aggregated => aggregated,
-        :count   => count,
+        :incidents      => results,
+        :aggregated     => aggregated,
+        :count          => count,
         :count_group_by => count_group_by
       }
     end
@@ -158,20 +155,16 @@ module Influx
       }
       incidents = find_incidents(start_date, end_date, query_input).sort_by { |k| k["count"] }.reverse
       return [] if incidents.empty?
-      results = []
-      incidents.each do |incident|
+      incidents.map { |incident|
         next if incident['incident_key'].nil?
         entity, check = incident['incident_key'].split(':', 2)
-        results.push(
-          {
-            'count'  => incident['count'],
-            'entity' => entity,
-            'check'  => check,
-            'mean_time_to_resolve' => incident['mean'].to_i
-          }
-        )
-      end
-      results
+        {
+          'count'  => incident['count'],
+          'entity' => entity,
+          'check'  => check,
+          'mean_time_to_resolve' => incident['mean'].to_i
+        }
+      }.compact
     end
 
     def save_categories(data)
