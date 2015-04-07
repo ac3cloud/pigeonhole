@@ -27,7 +27,7 @@ description "Takes an optional start and an optional finish date in the form of
 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS+10:00' and imports all PagerDuty incidents
 within those dates into InfluxDB. If no start date is specified, it will
 default to today, 00:00:00h. If no finish date is specified it will use now as
-finish date."
+the finish date."
 
 arg :start_date,  :optional
 arg :finish_date, :optional
