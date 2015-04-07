@@ -61,8 +61,8 @@ class Pagerduty
   def add_ack_resolve(incidents)
     incidents.each do |incident|
       incident_id      = incident[:id]
-      log              = request("https://bltprf.pagerduty.com/api/v1/incidents/#{incident_id}/log_entries")
-      problem          = log.select {|x| x['type'] == 'trigger'}.first
+      log              = request("https://bltprf.pagerduty.com/api/v1/incidents/#{incident_id}/log_entries").sort_by { |x| x['created_at'] }
+      problem          = log.select { |x| x['type'] == 'trigger' }.first
       problem_time     = Time.parse(problem['created_at'])
       acknowledge_by   = nil
       time_to_ack      = nil
@@ -76,7 +76,7 @@ class Pagerduty
       end
 
       if log.any? {|x| x['type'] == 'resolve'}
-        resolve         = log.select {|x| x['type'] == 'resolve'}.first
+        resolve         = log.select { |x| x['type'] == 'resolve' }.first
         resolve_time    = Time.parse(resolve['created_at'])
         time_to_resolve = resolve_time - problem_time
       end
