@@ -23,7 +23,7 @@ main do |oncall_date|
 end
 
 def send_email(address)
-  message =<<MESSAGE_END
+  message = <<MESSAGE_END
 From: #{@config['from']}
 To: #{address}
 Subject: #{@config['subject']}

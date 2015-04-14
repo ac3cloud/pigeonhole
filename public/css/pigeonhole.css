@@ -17,19 +17,16 @@ h3#handled-incidents {
   margin-bottom: 32px;
 }
 
-form#incidents th {
-  cursor: pointer;
-}
-
-form#incidents th.time {
+form#incidents th#time {
   width: 200px;
 }
 
-form#incidents th.category {
+form#incidents th#category {
   width: 180px;
 }
 
-div#breakdownchart {
-  width: 100%;
-  height: 400px;
+@media (min-width: 1200px) {
+  .container {
+    width: 1370px;
+  }
 }

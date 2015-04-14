@@ -6,12 +6,14 @@
     %title Pigeonhole
     %link{:href => "//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css", :rel=>"stylesheet"}
     %link{:href => "//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css", :rel=>"stylesheet"}
+    %link{:href => "/css/tablesort.css", :rel=>"stylesheet"}
     %link{:href => "/css/pigeonhole.css", :rel=>"stylesheet"}
     %link{:href => "/css/jquery-ui.css", :rel=>"stylesheet"}
     %script{:src => "/js/jquery-1.11.1.min.js"}
     %script{:src => "/js/jquery-ui.js"}
     %script{:src => "/js/jquery.tablesorter.min.js"}
     %script{:src => "/js/jquery.tablesorter.widgets.js"}
+    %script{:src => "/js/tablesort.js"}
     %script{:src => "/js/pigeonhole.js"}
   %body
     %nav{:class => 'navbar navbar-default datenav', :role => 'navigation'}
@@ -26,25 +28,22 @@
             %li
               %a{:href=>"/"} Categorisation
             %li
-              %a{:href=>"/breakdown"} Breakdown
+              %a{:href=>"/alert-frequency"} Alert Frequency
+            %li
+              %a{:href=>"/alert-response"} Alert Response
+            %li
+              %a{:href=>"/noise-candidates"} Alert Noise Candidates
 
           %div.navbar-form.navbar-right
-            - if request.path_info.include?('breakdown')
-              %form{:action => "", :method => "post", :role => "form", :class => "form-inline"}
-                #startcontrol.form-group.date-select
-                  %label{:for => "start_date"} From
-                  %input{:type => "date", :id => "start_date", :class => "form-control", :value => "#{@start_date}" }
-                #endcontrol.form-group.date-select
-                  %label{:for => "end_date"} to
-                  %input{:type => "date", :id => "end_date", :class => "form-control", :value => "#{@end_date}" }
-                %div.form-group
-                  %input{:type => "button", :id => "reload-interval", :type => "button", :class => "btn btn-success", :value => "load selected dates" }
-            - else
-              %form{:action => "", :method => "post", :role => "form", :class => "form-inline"}
-                %div.form-group.date-select
-                  %label{:for => "start_date"} Date
-                  %input{:type => "text",   :id => "start_date", :class => "form-control", :value => "#{@date}" }
-                  %input{:type => "button", :id => "reload-single", :type => "button", :class => "btn btn-success", :value => "load selected date" }
+            %form{:action => "", :method => "post", :role => "form", :class => "form-inline"}
+              #startcontrol.form-group.date-select
+                %label{:for => "start_date"} From
+                %input{:type => "date", :id => "start_date", :class => "form-control", :value => "#{@start_date}" }
+              #endcontrol.form-group.date-select
+                %label{:for => "end_date"} to
+                %input{:type => "date", :id => "end_date", :class => "form-control", :value => "#{@end_date}" }
+              %div.form-group
+                %input{:type => "button", :id => "reload", :type => "button", :class => "btn btn-success", :value => "load selected dates" }
 
     %div.container
       = yield

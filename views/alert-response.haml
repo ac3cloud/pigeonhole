@@ -1,0 +1,98 @@
+%h3#handled-incidents
+  %span
+  - if @start_date == @end_date
+    Acknowledgement and resolution times of alerts handled on
+    = @start_date
+  - else
+    Acknowledgement and resolution times of alerts handled between
+    = @start_date
+    and
+    = @end_date
+
+%div{:id => 'ackresolutionchart'}
+
+%form{:action => '', :method => 'post', :role => 'form', :class => 'form', :id => 'ackresolution'}
+  %h3
+    Alert list (
+    = @acked
+    acknowledged out of
+    = @total
+    )
+  %table#incidents-table.table.table-hover.table-striped.table-bordered.table-condensed.tablesorter
+    %thead
+      %tr
+        %th#alert_time.col-md-2
+          Time of alert
+        %th#alert_id.col-md-1
+          ID
+        %th#entity.col-md-3
+          Entity
+        %th#check.col-md-2
+          Check
+        %th#ack_by.col-md-1
+          Acknowledged by
+        %th#ack.col-md-1
+          Time to Acknowledge
+        %th#resolve.col-md-1
+          Time to Resolve
+    %tbody
+      - @incidents.each do |incident|
+        %tr
+          %td= Time.at(incident['alert_time'])
+          %td
+            %a{:href => "https://bltprf.pagerduty.com/incidents/#{incident['id']}"}= incident['id']
+          %td= incident['entity']
+          %td= incident['check']
+          %td= incident['ack_by']
+          %td= case incident['time_to_ack']; when 'N/A'; incident['time_to_ack']; when 1; "#{incident['time_to_ack']} minute"; else; "#{incident['time_to_ack']} minutes"; end
+          %td= case incident['time_to_resolve']; when 'N/A'; incident['time_to_resolve']; when 1; "#{incident['time_to_resolve']} minute"; else; "#{incident['time_to_resolve']} minutes"; end
+
+%script{:src => "https://code.highcharts.com/highcharts.js"}
+%script{:src => "https://code.highcharts.com/highcharts-more.js"}
+:javascript
+  Highcharts.setOptions({
+    global: {
+      useUTC: false
+    }
+  });
+  $(function () {
+    var data = #{@series}
+    $('#ackresolutionchart').highcharts({
+      chart: {
+        zoomType: 'x'
+      },
+      yAxis: [{
+        min: 0,
+        opposite: true,
+        title: {
+          text: 'Number of alerts per time block'
+        }
+      }, {
+        min: 0,
+        title: {
+          text: 'Time (min) to acknowledge or resolve alert'
+        }
+      }],
+      xAxis: {
+          type: 'datetime',
+          title: {
+              text: 'Time of alert'
+          }
+      },
+      credits: {
+          enabled: false
+      },
+      title: {
+          text: ''
+      },
+      plotOptions: {
+        series: {
+          compare: 'value'
+        }
+      },
+      tooltip: {
+          shared: true,
+      },
+      series: data
+    });
+  });
