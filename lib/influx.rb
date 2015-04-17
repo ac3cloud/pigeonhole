@@ -24,7 +24,15 @@ module Influx
 
     def insert_incident(incident)
       timeseries = @config['series']
-      existing = @influxdb.query "select id, time_to_resolve from #{timeseries} where id='#{incident[:id]}'"
+      begin
+        existing = @influxdb.query "select id, time_to_resolve from #{timeseries} where id='#{incident[:id]}'"
+      rescue InfluxDB::Error => e
+        if e.message.match(/^Couldn't find series/)
+          existing = []
+        else
+          raise
+        end
+      end
       # Incidents can be in three states:
       # Not in InfluxDB (write as new point)
       # In InfluxDB, not resolved (re-write existing point with any new information)
