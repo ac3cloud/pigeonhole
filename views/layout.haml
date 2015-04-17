@@ -22,17 +22,17 @@
 
           %div.navbar-header
             %span.navbar-brand
-              Pigeonhole
+              %a{:href=>"/", :class => "home_link"} Pigeonhole
 
           %div.nav.navbar-nav
             %li
-              %a{:href=>"/"} Categorisation
+              %a{:href=>"/#{@start_date}/#{@end_date}"} Categorisation
             %li
-              %a{:href=>"/alert-frequency"} Alert Frequency
+              %a{:href=>"/alert-frequency/#{@start_date}/#{@end_date}"} Alert Frequency
             %li
-              %a{:href=>"/alert-response"} Alert Response
+              %a{:href=>"/alert-response/#{@start_date}/#{@end_date}"} Alert Response
             %li
-              %a{:href=>"/noise-candidates"} Alert Noise Candidates
+              %a{:href=>"/noise-candidates/#{@start_date}/#{@end_date}"} Alert Noise Candidates
 
           %div.navbar-form.navbar-right
             %form{:action => "", :method => "post", :role => "form", :class => "form-inline"}
