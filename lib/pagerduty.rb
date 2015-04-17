@@ -36,9 +36,10 @@ class Pagerduty
     result
   end
 
-  def incidents(start_date, finish_date = nil, time_zone = 'Sydney')
+  def incidents(start_date, finish_date = nil)
     finish_clause     = finish_date ? finish_clause = "&until=#{finish_date}" : ""
-    endpoint = "https://bltprf.pagerduty.com/api/v1/incidents?since=#{start_date}#{finish_clause}&time_zone=#{time_zone}"
+    time_zone = @config['time_zone']
+    endpoint  = "https://bltprf.pagerduty.com/api/v1/incidents?since=#{start_date}#{finish_clause}&time_zone=#{time_zone}"
     response  = request(endpoint)
     incidents = response.map do |incident|
       tmp = {
