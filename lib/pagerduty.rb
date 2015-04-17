@@ -1,6 +1,7 @@
 require 'httparty'
 require 'json'
 require 'toml'
+require 'parallel'
 
 class Pagerduty
   def initialize
@@ -60,7 +61,7 @@ class Pagerduty
   end
 
   def add_ack_resolve(incidents)
-    incidents.each do |incident|
+    Parallel.each(incidents, :in_threads => 20) do |incident|
       incident_id      = incident[:id]
       log              = request("https://bltprf.pagerduty.com/api/v1/incidents/#{incident_id}/log_entries").sort_by { |x| x['created_at'] }
       problem          = log.select { |x| x['type'] == 'trigger' }.first
