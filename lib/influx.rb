@@ -22,10 +22,12 @@ module Influx
       fail("could not connect to influxdb") if @influxdb.stopped?
     end
 
-    def insert_incident(incident)
+    def insert_incidents(incidents)
       timeseries = @config['series']
+      entries = []
       begin
-        existing = @influxdb.query "select id, time_to_resolve from #{timeseries} where id='#{incident[:id]}'"
+        entries = @influxdb.query "select id, time_to_resolve from #{timeseries}"
+        entries = entries[timeseries]
       rescue InfluxDB::Error => e
         if e.message.match(/^Couldn't find series/)
           existing = []
@@ -33,25 +35,28 @@ module Influx
           raise
         end
       end
-      # Incidents can be in three states:
-      # Not in InfluxDB (write as new point)
-      # In InfluxDB, not resolved (re-write existing point with any new information)
-      # In InfluxDB, resolved (point is final, nothing happens)
-      if existing.empty?
-        puts "inserting #{incident}"
-        incident[:time] = Time.parse(incident[:created_on]).to_i
-      else
-        if existing[timeseries].first['time_to_resolve'].nil?
-          puts "Incident #{incident[:id]} is already in influxDB - updating"
-          incident['time'] = existing[timeseries].first['time']
-          incident['sequence_number'] = existing[timeseries].first['sequence_number']
+      incidents.each do |incident|
+        existing = entries.select{ |x| x['id'] == incident[:id] }
+        # Incidents can be in three states:
+        # Not in InfluxDB (write as new point)
+        # In InfluxDB, not resolved (re-write existing point with any new information)
+        # In InfluxDB, resolved (point is final, nothing happens)
+        if existing.empty?
+          puts "inserting #{incident}"
+          incident[:time] = Time.parse(incident[:created_on]).to_i
         else
-          puts "Incident #{incident[:id]} is already in influxDB and has been resolved - skipping"
-          return
+          if existing.first['time_to_resolve'].nil?
+            puts "Incident #{incident[:id]} is already in influxDB - updating"
+            incident['time'] = existing.first['time']
+            incident['sequence_number'] = existing.first['sequence_number']
+          else
+            puts "Incident #{incident[:id]} is already in influxDB and has been resolved - skipping"
+            return
+          end
         end
+        incident.delete(:created_on)
+        @influxdb.write_point(timeseries, incident)
       end
-      incident.delete(:created_on)
-      @influxdb.write_point(timeseries, incident)
     end
 
     def find_incidents(start_date = nil, end_date = nil, query_input = nil)
