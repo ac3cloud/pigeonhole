@@ -30,3 +30,8 @@ form#incidents th#category {
     width: 1370px;
   }
 }
+
+.home_link, .home_link:hover, .home_link:active {
+  color: #666;
+  text-decoration: none;
+}
