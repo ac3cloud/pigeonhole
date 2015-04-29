@@ -23,11 +23,13 @@ module Influx
     end
 
     def insert_incidents(incidents)
+      return if incidents.empty?
       timeseries = @config['series']
-      entries = []
+      oldest = incidents.map { |x| Time.parse(x[:created_on]).to_i }.min - 1
+      newest = incidents.map { |x| Time.parse(x[:created_on]).to_i }.max + 1
       begin
-        entries = @influxdb.query "select id, time_to_resolve from #{timeseries}"
-        entries = entries[timeseries]
+        entries = @influxdb.query "select id, time_to_resolve from #{timeseries} where time > #{oldest}s and time < #{newest}s"
+        entries = entries.empty? ? [] : entries[timeseries]
       rescue InfluxDB::Error => e
         if e.message.match(/^Couldn't find series/)
           existing = []
@@ -36,7 +38,7 @@ module Influx
         end
       end
       incidents.each do |incident|
-        existing = entries.select{ |x| x['id'] == incident[:id] }
+        existing = entries.select { |x| x['id'] == incident[:id] }
         # Incidents can be in three states:
         # Not in InfluxDB (write as new point)
         # In InfluxDB, not resolved (re-write existing point with any new information)
@@ -51,7 +53,7 @@ module Influx
             incident['sequence_number'] = existing.first['sequence_number']
           else
             puts "Incident #{incident[:id]} is already in influxDB and has been resolved - skipping"
-            return
+            next
           end
         end
         incident.delete(:created_on)
