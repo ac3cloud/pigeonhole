@@ -36,6 +36,9 @@
 
           %div.navbar-form.navbar-right
             %form{:action => "", :method => "post", :role => "form", :class => "form-inline"}
+              #searchcontrol.form-group
+                %label{:for => "search"} Search
+                %input{:type => "text", :id => "search", :class => "form-control", :value => "#{@search}" }
               #startcontrol.form-group.date-select
                 %label{:for => "start_date"} From
                 %input{:type => "date", :id => "start_date", :class => "form-control", :value => "#{@start_date}" }
@@ -43,7 +46,7 @@
                 %label{:for => "end_date"} to
                 %input{:type => "date", :id => "end_date", :class => "form-control", :value => "#{@end_date}" }
               %div.form-group
-                %input{:type => "button", :id => "reload", :type => "button", :class => "btn btn-success", :value => "load selected dates" }
+                %input{:type => "submit", :id => "reload", :class => "btn btn-success", :value => "load selected dates" }
 
     %div.container
       = yield

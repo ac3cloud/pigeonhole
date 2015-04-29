@@ -17,4 +17,6 @@ group :development do
   gem 'shotgun'
   gem 'tux'
   gem 'pry'
+  gem 'pry-debugger'
+  gem 'pry-stack_explorer'
 end

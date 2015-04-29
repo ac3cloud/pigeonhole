@@ -7,6 +7,7 @@ require 'influx'
 require 'haml'
 require 'date'
 require 'highcharts'
+require 'pry-debugger'
 
 influxdb = Influx::Db.new
 
@@ -39,6 +40,7 @@ get '/:start_date/:end_date' do
     'needs documentation',
     'unclear, needs discussion'
   ]
+  @search     = params["search"]
   @start_date = params["start_date"]
   @end_date   = params["end_date"]
   @incidents = influxdb.find_incidents(@start_date, @end_date)
@@ -81,11 +83,14 @@ get '/noise-candidates/:start_date/:end_date' do
 end
 
 post '/:start_date/:end_date' do
-  uri = "#{params["start_date"]}/#{params["end_date"]}"
+  uri = "#{params["start_date"]}/#{params["end_date"]}?search=#{params["search"]}"
   params.delete("start_date")
   params.delete("end_date")
+  params.delete("search")
   params.delete("splat")
   params.delete("captures")
+
+
   influxdb.save_categories(params)
   redirect "/#{uri}"
 end
