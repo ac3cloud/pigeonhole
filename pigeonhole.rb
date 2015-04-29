@@ -43,7 +43,8 @@ get '/:start_date/:end_date' do
   @search     = params["search"]
   @start_date = params["start_date"]
   @end_date   = params["end_date"]
-  @incidents = influxdb.find_incidents(@start_date, @end_date)
+  query_input = { :conditions => "and incident_key =~ /.*#{@search}.*/" }
+  @incidents = influxdb.find_incidents(@start_date, @end_date, query_input)
   haml :"index"
 end
 
