@@ -80,9 +80,10 @@ get '/noise-candidates/:start_date/:end_date' do
   haml :"noise-candidates"
 end
 
-post '/:date' do
-  uri = params["date"]
-  params.delete("date")
+post '/:start_date/:end_date' do
+  uri = "#{params["start_date"]}/#{params["end_date"]}"
+  params.delete("start_date")
+  params.delete("end_date")
   params.delete("splat")
   params.delete("captures")
   influxdb.save_categories(params)
