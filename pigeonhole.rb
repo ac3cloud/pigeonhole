@@ -7,7 +7,6 @@ require 'influx'
 require 'haml'
 require 'date'
 require 'highcharts'
-require 'pry-debugger'
 
 influxdb = Influx::Db.new
 
