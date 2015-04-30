@@ -30,8 +30,11 @@ get '/noise-candidates/?' do
   redirect "/noise-candidates/#{today}/#{today}"
 end
 
-def search_precondition 
-  @search ? "and incident_key =~ /.*#{@search.strip}.*/i" : ""
+def search_precondition
+  return "" unless @search
+  # strip characters that shouldn't be in incident keys that could be used for injection
+  @search = @search.strip.tr("\"';","")
+  "and incident_key =~ /.*#{@search}.*/i"
 end
 
 get '/:start_date/:end_date' do
