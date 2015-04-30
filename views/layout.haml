@@ -24,15 +24,16 @@
             %span.navbar-brand
               %a{:href=>"/", :class => "home_link"} Pigeonhole
 
+          - q = @search ? "?search=#{@search}" : ""
           %div.nav.navbar-nav
             %li
-              %a{:href=>"/#{@start_date}/#{@end_date}"} Categorisation
+              %a{:href=>"/#{@start_date}/#{@end_date}#{q}"} Categorisation
             %li
-              %a{:href=>"/alert-frequency/#{@start_date}/#{@end_date}"} Alert Frequency
+              %a{:href=>"/alert-frequency/#{@start_date}/#{@end_date}#{q}"} Alert Frequency
             %li
-              %a{:href=>"/alert-response/#{@start_date}/#{@end_date}"} Alert Response
+              %a{:href=>"/alert-response/#{@start_date}/#{@end_date}#{q}"} Alert Response
             %li
-              %a{:href=>"/noise-candidates/#{@start_date}/#{@end_date}"} Alert Noise Candidates
+              %a{:href=>"/noise-candidates/#{@start_date}/#{@end_date}#{q}"} Alert Noise Candidates
 
           %div.navbar-form.navbar-right
             #searchcontrol.form-group
