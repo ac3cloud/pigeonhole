@@ -10,9 +10,9 @@
     = @start_date
     and
     = @end_date
-    - if @search
-      matching term
-      = '"'+@search+'"'
+  - if @search
+    matching term
+    = '"'+@search+'"'
 
 %form{:action => '', :method => 'post', :role => 'form', :class => 'form', :id => 'incidents'}
   %table#incidents-table.table.table-hover.table-striped.table-bordered.table-condensed.tablesorter
