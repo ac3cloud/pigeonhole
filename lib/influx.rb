@@ -80,10 +80,11 @@ module Influx
       incidents[timeseries] ? incidents[timeseries] : []
     end
 
-    def incident_frequency(start_date = nil, end_date = nil)
+    def incident_frequency(start_date = nil, end_date = nil, passed_query_input = nil)
+      precondition = passed_query_input[:conditions] || ""
       query_input = {
         :query_select => "select count(incident_key), incident_key",
-        :conditions => "group by incident_key"
+        :conditions => "#{precondition} group by incident_key"
       }
       incidents = find_incidents(start_date, end_date, query_input).sort_by { |k| k["count"] }.reverse
       return [] if incidents.empty?
@@ -98,8 +99,8 @@ module Influx
       }.compact
     end
 
-    def alert_response(start_date = nil, end_date = nil)
-      incidents = find_incidents(start_date, end_date)
+    def alert_response(start_date = nil, end_date = nil, query_input = nil)
+      incidents = find_incidents(start_date, end_date, query_input)
       return {} if incidents.empty?
       results = incidents.map { |incident|
         next if incident['incident_key'].nil?
@@ -161,10 +162,11 @@ module Influx
       }
     end
 
-    def noise_candidates(start_date = nil, end_date = nil)
+    def noise_candidates(start_date = nil, end_date = nil, passed_query_input)
+      precondition = passed_query_input[:conditions] || "" 
       query_input = {
         :query_select => "select count(incident_key), incident_key, mean(time_to_resolve)",
-        :conditions => "and time_to_resolve < 120 group by incident_key"
+        :conditions => "#{precondition} and time_to_resolve < 120 group by incident_key"
       }
       incidents = find_incidents(start_date, end_date, query_input).sort_by { |k| k["count"] }.reverse
       return [] if incidents.empty?

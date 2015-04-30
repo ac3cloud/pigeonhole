@@ -31,6 +31,14 @@ get '/noise-candidates/?' do
   redirect "/noise-candidates/#{today}/#{today}"
 end
 
+def search_query_input 
+  if @search
+     { :conditions => "and incident_key =~ /.*#{@search}.*/" }
+  else
+     {}
+  end
+end
+
 get '/:start_date/:end_date' do
   @categories = [
     'not set',
@@ -40,18 +48,18 @@ get '/:start_date/:end_date' do
     'needs documentation',
     'unclear, needs discussion'
   ]
-  @search     = params["search"]
   @start_date = params["start_date"]
   @end_date   = params["end_date"]
-  query_input = { :conditions => "and incident_key =~ /.*#{@search}.*/" }
-  @incidents = influxdb.find_incidents(@start_date, @end_date, query_input)
+  @search     = params["search"]
+  @incidents = influxdb.find_incidents(@start_date, @end_date, search_query_input)
   haml :"index"
 end
 
 get '/alert-frequency/:start_date/:end_date' do
   @start_date = params["start_date"]
   @end_date   = params["end_date"]
-  @incidents  = influxdb.incident_frequency(@start_date, @end_date)
+  @search     = params["search"]
+  @incidents  = influxdb.incident_frequency(@start_date, @end_date, search_query_input)
   @total      = @incidents.map { |x| x['count'] }.inject(:+)
   @series     = HighCharts.alert_frequency(@incidents)
   haml :"alert-frequency"
@@ -60,7 +68,8 @@ end
 get '/alert-response/:start_date/:end_date' do
   @start_date = params["start_date"]
   @end_date   = params["end_date"]
-  resp = influxdb.alert_response(@start_date, @end_date)
+  @search     = params["search"]
+  resp = influxdb.alert_response(@start_date, @end_date, search_query_input)
   @series     = HighCharts.alert_response(resp)
   # Build table data
   @incidents  = resp[:incidents] || []
@@ -78,7 +87,8 @@ end
 get '/noise-candidates/:start_date/:end_date' do
   @start_date = params["start_date"]
   @end_date   = params["end_date"]
-  @incidents  = influxdb.noise_candidates(@start_date, @end_date)
+  @search     = params["search"]
+  @incidents  = influxdb.noise_candidates(@start_date, @end_date, search_query_input)
   @total      = @incidents.count
   haml :"noise-candidates"
 end
@@ -90,7 +100,6 @@ post '/:start_date/:end_date' do
   params.delete("search")
   params.delete("splat")
   params.delete("captures")
-
 
   influxdb.save_categories(params)
   redirect "/#{uri}"
