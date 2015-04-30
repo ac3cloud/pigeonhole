@@ -32,7 +32,7 @@ end
 
 def search_query_input 
   if @search
-     { :conditions => "and incident_key =~ /.*#{@search}.*/" }
+     { :conditions => "and incident_key =~ /.*#{@search.strip}.*/i" }
   else
      {}
   end
