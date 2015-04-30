@@ -80,8 +80,7 @@ module Influx
       incidents[timeseries] ? incidents[timeseries] : []
     end
 
-    def incident_frequency(start_date = nil, end_date = nil, passed_query_input = nil)
-      precondition = passed_query_input[:conditions] || ""
+    def incident_frequency(start_date = nil, end_date = nil, precondition = "")
       query_input = {
         :query_select => "select count(incident_key), incident_key",
         :conditions => "#{precondition} group by incident_key"
@@ -99,8 +98,8 @@ module Influx
       }.compact
     end
 
-    def alert_response(start_date = nil, end_date = nil, query_input = nil)
-      incidents = find_incidents(start_date, end_date, query_input)
+    def alert_response(start_date = nil, end_date = nil, precondition = "")
+      incidents = find_incidents(start_date, end_date, { :conditions => precondition })
       return {} if incidents.empty?
       results = incidents.map { |incident|
         next if incident['incident_key'].nil?
@@ -139,7 +138,7 @@ module Influx
       unless group_by.nil?
         aggregated = find_incidents(start_date, end_date,
                                     :query_select => "select mean(time_to_ack) as mean_ack, mean(time_to_resolve) as mean_resolve",
-                                    :conditions => "group by time(#{group_by})"
+                                    :conditions => "#{precondition} group by time(#{group_by})"
                     )
         aggregated.each do |incident|
           incident['mean_ack'] = incident['mean_ack'].nil? ? 0 : (incident['mean_ack'] / 60.0).ceil
@@ -151,7 +150,7 @@ module Influx
       count_group_by = group_by.nil? ? '1h' : group_by
       count = find_incidents(start_date, end_date,
                              :query_select => "select count(incident_key)",
-                             :conditions => "group by time(#{count_group_by}) fill(0)"
+                             :conditions => "#{precondition} group by time(#{count_group_by}) fill(0)"
               ).sort_by { |k| k["count"] }.reverse
 
       {
@@ -162,8 +161,7 @@ module Influx
       }
     end
 
-    def noise_candidates(start_date = nil, end_date = nil, passed_query_input)
-      precondition = passed_query_input[:conditions] || "" 
+    def noise_candidates(start_date = nil, end_date = nil, precondition = "")
       query_input = {
         :query_select => "select count(incident_key), incident_key, mean(time_to_resolve)",
         :conditions => "#{precondition} and time_to_resolve < 120 group by incident_key"

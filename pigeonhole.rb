@@ -30,8 +30,8 @@ get '/noise-candidates/?' do
   redirect "/noise-candidates/#{today}/#{today}"
 end
 
-def search_query_input 
-  @search ? { :conditions => "and incident_key =~ /.*#{@search.strip}.*/i" } : {}
+def search_precondition 
+  @search ? "and incident_key =~ /.*#{@search.strip}.*/i" : ""
 end
 
 get '/:start_date/:end_date' do
@@ -46,7 +46,8 @@ get '/:start_date/:end_date' do
   @start_date = params["start_date"]
   @end_date   = params["end_date"]
   @search     = params["search"]
-  @incidents = influxdb.find_incidents(@start_date, @end_date, search_query_input)
+puts search_precondition
+  @incidents = influxdb.find_incidents(@start_date, @end_date, {:conditions => search_precondition })
   haml :"index"
 end
 
@@ -54,7 +55,7 @@ get '/alert-frequency/:start_date/:end_date' do
   @start_date = params["start_date"]
   @end_date   = params["end_date"]
   @search     = params["search"]
-  @incidents  = influxdb.incident_frequency(@start_date, @end_date, search_query_input)
+  @incidents  = influxdb.incident_frequency(@start_date, @end_date, search_precondition)
   @total      = @incidents.map { |x| x['count'] }.inject(:+)
   @series     = HighCharts.alert_frequency(@incidents)
   haml :"alert-frequency"
@@ -64,7 +65,7 @@ get '/alert-response/:start_date/:end_date' do
   @start_date = params["start_date"]
   @end_date   = params["end_date"]
   @search     = params["search"]
-  resp = influxdb.alert_response(@start_date, @end_date, search_query_input)
+  resp = influxdb.alert_response(@start_date, @end_date, search_precondition)
   @series     = HighCharts.alert_response(resp)
   # Build table data
   @incidents  = resp[:incidents] || []
@@ -83,7 +84,7 @@ get '/noise-candidates/:start_date/:end_date' do
   @start_date = params["start_date"]
   @end_date   = params["end_date"]
   @search     = params["search"]
-  @incidents  = influxdb.noise_candidates(@start_date, @end_date, search_query_input)
+  @incidents  = influxdb.noise_candidates(@start_date, @end_date, search_precondition)
   @total      = @incidents.count
   haml :"noise-candidates"
 end
