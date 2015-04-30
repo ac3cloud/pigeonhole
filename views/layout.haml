@@ -38,13 +38,13 @@
           %div.navbar-form.navbar-right
             #searchcontrol.form-group
               %label{:for => "search"} Search
-              %input{:type => "text", :id => "search", :class => "form-control", :value => "#{@search}" }
+              %input{:type => "text", :id => "search", :class => "form-control navform_search", :value => "#{@search}" }
             #startcontrol.form-group.date-select
               %label{:for => "start_date"} From
-              %input{:type => "date", :id => "start_date", :class => "form-control", :value => "#{@start_date}" }
+              %input{:type => "date", :id => "start_date", :class => "form-control navform_date", :value => "#{@start_date}" }
             #endcontrol.form-group.date-select
               %label{:for => "end_date"} to
-              %input{:type => "date", :id => "end_date", :class => "form-control", :value => "#{@end_date}" }
+              %input{:type => "date", :id => "end_date", :class => "form-control navform_date", :value => "#{@end_date}" }
             %div.form-group
               %input{:type => "button", :id => "reload", :class => "btn btn-success", :value => "load" }
 
