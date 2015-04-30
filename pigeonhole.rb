@@ -31,11 +31,7 @@ get '/noise-candidates/?' do
 end
 
 def search_query_input 
-  if @search
-     { :conditions => "and incident_key =~ /.*#{@search.strip}.*/i" }
-  else
-     {}
-  end
+  @search ? { :conditions => "and incident_key =~ /.*#{@search.strip}.*/i" } : {}
 end
 
 get '/:start_date/:end_date' do
