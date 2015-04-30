@@ -82,10 +82,15 @@ end
 
 post '/:start_date/:end_date' do
   uri = "#{params["start_date"]}/#{params["end_date"]}"
+  opts = {
+    :start_date => params[:"start_date"],
+    :end_date   => params[:end_date]
+  }
   params.delete("start_date")
   params.delete("end_date")
   params.delete("splat")
   params.delete("captures")
-  influxdb.save_categories(params)
+  opts[:data] = params
+  influxdb.save_categories(opts)
   redirect "/#{uri}"
 end

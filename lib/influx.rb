@@ -182,11 +182,23 @@ module Influx
       }.compact
     end
 
-    def save_categories(data)
+    def save_categories(opts)
+      return if opts[:data].empty?
       timeseries = @config['series']
-      data.each do |incident, category|
-        query = "select * from #{timeseries} where id = '#{incident}'"
-        current_point = @influxdb.query(query)[timeseries].first
+      oldest =  Chronic.parse(opts[:start_date], :guess => false).first.to_i
+      newest =  Chronic.parse(opts[:end_date], :guess => false).last.to_i
+      begin
+        entries = @influxdb.query "select * from #{timeseries} where time > #{oldest}s and time < #{newest}s"
+        entries = entries.empty? ? [] : entries[timeseries]
+      rescue InfluxDB::Error => e
+        if e.message.match(/^Couldn't find series/)
+          entries = []
+        else
+          raise
+        end
+      end
+      opts[:data].each do |incident, category|
+        current_point = entries.select { |x| x['id'] == incident }.first
         current_point['category'] = category
         @influxdb.write_point(timeseries, current_point)
       end
