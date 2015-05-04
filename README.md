@@ -107,4 +107,12 @@ bundle exec ruby bin/alert_threshold_recommendations.rb --percent-to-remove 70 -
 
 ![Breakdown Mode](screenshots/breakdown.png?raw=true "Breakdown Mode")
 
+### Acknowledgement and resolution times mode
+
+![Breakdown Mode](screenshots/alert-response.png?raw=true "Alert Response Mode")
+
+### Noise candidate mode
+
+![Breakdown Mode](screenshots/noise-candidates.png?raw=true "Noise Candidates Mode")
+
 We hope you find this useful!
