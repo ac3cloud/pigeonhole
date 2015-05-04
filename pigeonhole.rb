@@ -105,7 +105,7 @@ post '/pagerduty' do
   data = JSON.parse(request.body.read)
   begin
     incidents = pagerduty.incidents_from_webhook(data)
-    raise "No incidents found" if incidents.empty?
+    raise 'No incidents found' if incidents.empty?
     incident_ids = incidents.map { |x| x[:id] }
     influxdb.insert_incidents(incidents)
     status 200
