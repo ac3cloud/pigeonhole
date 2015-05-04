@@ -55,6 +55,29 @@ bundle exec shotgun
 
 Pigeonhole is now able to be viewed at http://127.0.0.1:9393/
 
+### Alert Threshold Recommender
+
+Many monitoring tools are based on static thresholding.  Based on PagerDuty data, you can now estimate what thresholds should be used to stop X% of alerts occurring over a given timeframe:
+
+```
+➤ bundle exec ruby bin/alert_threshold_recommendations.rb --help
+Usage: alert_threshold_recommendations.rb [options]
+
+Calculates suggested alert thresholds for removing X% of alerts over a given time period
+
+Options:
+    -h, --help                       Show command line help
+        --log-level LEVEL            Set the logging level
+                                     (debug|info|warn|error|fatal)
+                                     (Default: info)
+    -p, --percent-to-remove percent  The percent of alerts to remove
+    -t, --time-period duration       The amount of time we should look over
+    -m, --more-than more-than        Only return results that have more than Y occurences
+    -r recover-within,               Only return results that recover within this amount of time
+        --recover-within
+    -s, --sort-by sort-by            The field we should sort the returned data by - frequency, threshold, or incident_key
+```
+
 ### Alert Categorisation Reminder
 
 To aid in alert categorisation, Pigeonhole includes a script to remind recent people on call to categorise the alerts they received.  This can be run using:
@@ -66,6 +89,12 @@ Usage: email_reminder_to_oncall [oncall_date]
 Takes an optional date (defaults to today) in the form of 'YYYY-MM-DD' and
 sends an email reminder to whoever was on call.
     -h, --help                       Show command line help
+```
+
+So, to work out thresholds required to remove 70% of the alerts over the last 3 months that recovered within 5 minutes and occurred more than 5 times, run:
+
+```
+bundle exec ruby bin/alert_threshold_recommendations.rb --percent-to-remove 70 --time-period '3 months' --sort-by threshold --recover-within '5 minutes' --more-than 5
 ```
 
 ## Screenshots
