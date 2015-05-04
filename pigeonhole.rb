@@ -71,6 +71,10 @@ get '/categorisation/:start_date/:end_date' do
   @search     = params["search"]
   @pagerduty_url = pagerduty.pagerduty_url
   @incidents = influxdb.find_incidents(@start_date, @end_date, {:conditions => search_precondition })
+  @incidents.each do |i|
+    i['description'] = Digest::SHA512.hexdigest(i['description'])[0..20]
+    i['id'] = rand(36**8).to_s(36).upcase
+  end
   haml :"categorisation"
 end
 
@@ -79,6 +83,10 @@ get '/alert-frequency/:start_date/:end_date' do
   @end_date   = params["end_date"]
   @search     = params["search"]
   @incidents  = influxdb.incident_frequency(@start_date, @end_date, search_precondition)
+  @incidents.each do |i|
+    i['entity'] = Digest::SHA512.hexdigest(i['entity'])[0..20]
+    i['check'] = Digest::SHA512.hexdigest(i['check'])[0..20] unless i['check'].nil?
+  end
   @total      = @incidents.map { |x| x['count'] }.inject(:+) || 0
   @series     = HighCharts.alert_frequency(@incidents)
   haml :"alert-frequency"
@@ -97,7 +105,10 @@ get '/alert-response/:start_date/:end_date' do
   @pagerduty_url = pagerduty.pagerduty_url
   @incidents.each do |incident|
     incident['entity'], incident['check'] = incident['incident_key'].split(':', 2)
-    incident['ack_by'] = 'N/A' if incident['ack_by'].nil?
+    incident['id'] = rand(36**8).to_s(36).upcase
+    incident['entity'] = Digest::SHA512.hexdigest(incident['entity'])[0..20]
+    incident['check'] = Digest::SHA512.hexdigest(incident['check'])[0..20]
+    incident['ack_by'] = incident['ack_by'].nil? ? 'N/A' : rand(36**8).to_s(36).upcase + '@example.com'
     incident['time_to_ack'] = 'N/A' if incident['time_to_ack'] == 0
     incident['time_to_resolve'] = 'N/A' if incident['time_to_resolve'] == 0
   end
@@ -109,6 +120,10 @@ get '/noise-candidates/:start_date/:end_date' do
   @end_date   = params["end_date"]
   @search     = params["search"]
   @incidents  = influxdb.noise_candidates(@start_date, @end_date, search_precondition)
+  @incidents.each do |i|
+    i['entity'] = Digest::SHA512.hexdigest(i['entity'])[0..20]
+    i['check'] = Digest::SHA512.hexdigest(i['check'])[0..20] unless i['check'].nil?
+  end
   @total      = @incidents.count
   haml :"noise-candidates"
 end
