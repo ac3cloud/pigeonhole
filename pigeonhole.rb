@@ -7,6 +7,7 @@ require 'influx'
 require 'haml'
 require 'date'
 require 'highcharts'
+require 'uri'
 
 influxdb = Influx::Db.new
 
@@ -32,8 +33,7 @@ end
 
 def search_precondition
   return "" unless @search
-  # strip characters that shouldn't be in incident keys that could be used for injection
-  @search = @search.strip.tr("\"';","")
+  @search = URI.escape(@search)
   "and incident_key =~ /.*#{@search}.*/i"
 end
 
