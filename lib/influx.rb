@@ -27,7 +27,7 @@ module Influx
       entries = []
       begin
         entries = @influxdb.query "select id, time_to_resolve from #{timeseries}"
-        entries = entries[timeseries]
+        entries = entries[timeseries] || []
       rescue InfluxDB::Error => e
         if e.message.match(/^Couldn't find series/)
           existing = []
