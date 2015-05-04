@@ -1,6 +1,7 @@
 require 'influxdb'
 require 'time'
 require 'chronic'
+require 'chronic_duration'
 require 'toml'
 require 'active_support/core_ext/numeric/time'
 
@@ -180,6 +181,50 @@ module Influx
           'mean_time_to_resolve' => incident['mean'].to_i
         }
       }.compact
+    end
+
+    def threshold_recommendations(opts)
+      data = find_incidents(opts[:start_date], opts[:end_date],
+                            :query_select => "select count(incident_key), percentile(time_to_resolve, #{opts[:percentage]}), max(time_to_resolve)",
+                            :conditions => "group by incident_key"
+             )
+      # Firstly, don't try to provide analysis for data where we have less than 5 instances of it
+      # Also remove alerts that don't have an incident key, or haven't been resolved yet.
+      recover_within = ChronicDuration.parse(opts[:recover_within]).to_i
+      raise "Failed to parse recover within" unless recover_within > 0
+      data.reject! { |x| x['percentile'].nil? || x['percentile'].to_i > recover_within || x['count'] < opts[:more_than].to_i || x['incident_key'].nil? }
+
+      sort_by = case options[:sort_by]
+      when 'frequency'
+        'count'
+      when 'threshold'
+        'percentile'
+      else
+        opts[:sort_by]
+      end
+      data = data.sort_by { |x| x[sort_by] }
+      data.reverse! if sort_by == 'frequency'
+
+      data.map do |d|
+        threshold = d['percentile'] + 5
+        formatted_threshold = case
+        when threshold < 60
+          "#{threshold} seconds"
+        when threshold < 120
+          div, mod = threshold.divmod(60)
+          "#{div} minute and #{mod} seconds"
+        else
+          div, mod = threshold.divmod(60)
+          "#{div} minutes and #{mod} seconds"
+        end
+        {
+          :incident_key => d['incident_key'],
+          :count => d['count'],
+          :fixed => (d['count'] * opts[:percentage].to_i / 100).floor,
+          :threshold => threshold,
+          :formatted_threshold => formatted_threshold
+        }
+      end
     end
 
     def save_categories(opts)

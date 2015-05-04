@@ -9,17 +9,19 @@ At present it offers a graph of alert frequency, but we're also looking to and a
 Pigeonhole requires the following:
 
   - InfluxDB
-  - Ruby 2.1.5 (and rbenv, or your preferred ruby management tool)
+  - Ruby 2.2.1 (and rbenv, or your preferred Ruby management tool)
 
 After these have been installed, copy the config.toml.example file to config.toml, and update it with your details.
 
 ## Usage
 
-There are three parts to Pigeonhole:
+There are multiple parts to Pigeonhole:
 
 ### Import from PagerDuty
 
-Pigeonhole will pull all recent events from your PagerDuty account and import them.
+Pigeonhole will receive events from your PagerDuty account and import them.  This can be done in one of two ways:
+
+#### Pull in data via a script (including historical data)
 
 ```
 ➤ ./bin/import_from_pd --help
@@ -37,6 +39,12 @@ Options:
                                      (debug|info|warn|error|fatal)
                                      (Default: info)
 ```
+
+#### Listen for data from Pagerduty Webhooks
+
+Pigeonhole will also listen for Pagerduty Webhooks, which [sends data](https://developer.pagerduty.com/documentation/rest/webhooks) whenever something happens on an incident.
+
+To configure this, follow [the Webhook setup guide](http://www.pagerduty.com/docs/guides/hipchat-integration-guide/), with the endpoint URL set as http://your.pigeonhole.url:9393/pagerduty.  There is no need for an auth_token or room_id.
 
 ### Web UI
 After this is been completed as you can load up the pigeonhole interface by running:
