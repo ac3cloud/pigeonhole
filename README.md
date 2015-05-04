@@ -9,7 +9,7 @@ At present it offers a graph of alert frequency, but we're also looking to and a
 Pigeonhole requires the following:
 
   - InfluxDB
-  - Ruby 2.2.1 (and rbenv, or your preferred ruby management tool)
+  - Ruby 2.2.1 (and rbenv, or your preferred Ruby management tool)
 
 After these have been installed, copy the config.toml.example file to config.toml, and update it with your details.
 

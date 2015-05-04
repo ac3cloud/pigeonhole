@@ -194,17 +194,23 @@ module Influx
       raise "Failed to parse recover within" unless recover_within > 0
       data.reject! { |x| x['percentile'].nil? || x['percentile'].to_i > recover_within || x['count'] < opts[:more_than].to_i || x['incident_key'].nil? }
 
-      if opts[:sort_by] == 'frequency'
-        data = data.sort_by { |x| x['count'] }.reverse
+      sort_by = case options[:sort_by]
+      when 'frequency'
+        'count'
+      when 'threshold'
+        'percentile'
       else
-        data = data.sort_by { |x| x[opts[:sort_by]] }
+        opts[:sort_by]
       end
+      data = data.sort_by { |x| x[sort_by] }
+      data.reverse! if sort_by == 'frequency'
 
       data.map do |d|
         threshold = d['percentile'] + 5
-        formatted_threshold = if threshold < 60
+        formatted_threshold = case
+        when threshold < 60
           "#{threshold} seconds"
-        elsif threshold < 120
+        when threshold < 120
           div, mod = threshold.divmod(60)
           "#{div} minute and #{mod} seconds"
         else
