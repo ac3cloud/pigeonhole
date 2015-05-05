@@ -34,16 +34,17 @@
             %li
               %a{:href=>"/noise-candidates/#{@start_date}/#{@end_date}"} Alert Noise Candidates
 
-          %div.navbar-form.navbar-right
-            %form{:action => "", :method => "post", :role => "form", :class => "form-inline"}
-              #startcontrol.form-group.date-select
-                %label{:for => "start_date"} From
-                %input{:type => "date", :id => "start_date", :class => "form-control", :value => "#{@start_date}" }
-              #endcontrol.form-group.date-select
-                %label{:for => "end_date"} to
-                %input{:type => "date", :id => "end_date", :class => "form-control", :value => "#{@end_date}" }
-              %div.form-group
-                %input{:type => "button", :id => "reload", :type => "button", :class => "btn btn-success", :value => "load selected dates" }
+          - unless request.path_info == '/'
+            %div.navbar-form.navbar-right
+              %form{:action => "", :method => "post", :role => "form", :class => "form-inline"}
+                #startcontrol.form-group.date-select
+                  %label{:for => "start_date"} From
+                  %input{:type => "date", :id => "start_date", :class => "form-control", :value => "#{@start_date}" }
+                #endcontrol.form-group.date-select
+                  %label{:for => "end_date"} to
+                  %input{:type => "date", :id => "end_date", :class => "form-control", :value => "#{@end_date}" }
+                %div.form-group
+                  %input{:type => "button", :id => "reload", :type => "button", :class => "btn btn-success", :value => "load selected dates" }
 
     %div.container
       = yield
