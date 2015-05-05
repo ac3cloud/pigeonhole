@@ -49,7 +49,6 @@ get '/:start_date/:end_date' do
   @start_date = params["start_date"]
   @end_date   = params["end_date"]
   @search     = params["search"]
-puts search_precondition
   @incidents = influxdb.find_incidents(@start_date, @end_date, {:conditions => search_precondition })
   haml :"index"
 end
