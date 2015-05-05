@@ -16,8 +16,12 @@ influxdb = Influx::Db.new
 pagerduty = Pagerduty.new
 
 get '/' do
+  haml :"index"
+end
+
+get '/categorisation/?' do
   today = Time.now.strftime("%Y-%m-%d")
-  redirect "/#{today}/#{today}"
+  redirect "/categorisation/#{today}/#{today}"
 end
 
 get '/alert-frequency/?' do
@@ -35,7 +39,7 @@ get '/noise-candidates/?' do
   redirect "/noise-candidates/#{today}/#{today}"
 end
 
-get '/:start_date/:end_date' do
+get '/categorisation/:start_date/:end_date' do
   @categories = [
     'not set',
     'real',
@@ -47,7 +51,7 @@ get '/:start_date/:end_date' do
   @start_date = params["start_date"]
   @end_date   = params["end_date"]
   @incidents = influxdb.find_incidents(@start_date, @end_date)
-  haml :"index"
+  haml :"categorisation"
 end
 
 get '/alert-frequency/:start_date/:end_date' do
