@@ -68,7 +68,7 @@ module Influx
       end_date = Chronic.parse(end_date, :guess => false).last unless end_date.nil?
 
       # If we couldn't parse the given date, use the last 24 hours.
-      end_date = end_date.nil? ? Time.now.to_i : end_date.to_i
+      end_date = (end_date.nil? || end_date.to_i > Time.now.to_i) ? Time.now.to_i : end_date.to_i
       start_date = start_date.nil? ? end_date - (24 * 60 * 60) : start_date.to_i
 
       # As a default, select * from the timeframe.  Otherwise, use what the input query gave us
