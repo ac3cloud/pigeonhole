@@ -89,7 +89,7 @@ get '/noise-candidates/:start_date/:end_date' do
   haml :"noise-candidates"
 end
 
-post '/:start_date/:end_date' do
+post '/categorisation/:start_date/:end_date' do
   uri = "#{params["start_date"]}/#{params["end_date"]}"
   opts = {
     :start_date => params[:"start_date"],
