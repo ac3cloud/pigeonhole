@@ -16,6 +16,7 @@ influxdb = Influx::Db.new
 pagerduty = Pagerduty.new
 
 get '/' do
+  @daily_stats, @breakdown_by_time = influxdb.generate_daily_stats
   haml :"index"
 end
 

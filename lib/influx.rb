@@ -68,7 +68,7 @@ module Influx
       end_date = Chronic.parse(end_date, :guess => false).last unless end_date.nil?
 
       # If we couldn't parse the given date, use the last 24 hours.
-      end_date = end_date.nil? ? Time.now.to_i : end_date.to_i
+      end_date = (end_date.nil? || end_date.to_i > Time.now.to_i) ? Time.now.to_i : end_date.to_i
       start_date = start_date.nil? ? end_date - (24 * 60 * 60) : start_date.to_i
 
       # As a default, select * from the timeframe.  Otherwise, use what the input query gave us
@@ -225,6 +225,44 @@ module Influx
           :formatted_threshold => formatted_threshold
         }
       end
+    end
+
+    def generate_daily_stats
+      # First, we grab the stats for the last 24 hours
+      select_str = "select count(incident_key), " + %w(ack resolve).map { |type|
+        "MEAN(time_to_#{type}) as #{type}_mean, STDDEV(time_to_#{type}) as #{type}_stddev, PERCENTILE(time_to_#{type}, 95) as #{type}_95_percentile"
+      }.join(', ')
+
+      daily_stats = find_incidents(nil, nil, :query_select => select_str)
+
+      breakdown_by_time = []
+      # Sydney midnight is 14:00 UTC (previous day)
+      # Sydney 8am is 22:00 UTC (previous day)
+      # Sydney 4pm is 06:00 UTC
+      # FIXME: this needs to move to the config file and allow shift names
+
+      # Here, we aim to pull down data for the last 3 full shifts (ie, the last 24 hours), plus the partial shift currently running
+      shift_times = %w(14 22 06).map { |x|
+        [
+          Chronic.parse("#{Date.today.strftime('%F')} #{x}:00:00 utc"),
+          Chronic.parse("#{Date.today.prev_day.strftime('%F')} #{x}:00:00 utc")
+        ]
+      }.flatten
+      shift_times.reject! { |x| x.to_i > Time.now.to_i }
+      # FIXME: remove hardcoded 4
+      shift_times = shift_times.push(Time.now.utc).sort.reverse[0..4]
+
+      shift_times.each_with_index { |time, index|
+        break if index + 1 == shift_times.length
+        start_time, finish_time = shift_times[index+1].to_s, time.to_s
+        x = find_incidents(start_time, finish_time, :query_select => select_str).first
+        # FIXME: add call for percentage of monitoring alerts acknowledged within 60 seconds
+        x['start_time'] = start_time
+        x['finish_time'] = finish_time
+        breakdown_by_time << x
+      }
+
+      [ daily_stats, breakdown_by_time ]
     end
 
     def save_categories(opts)

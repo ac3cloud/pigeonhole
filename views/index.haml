@@ -1,1 +1,18 @@
-This is the index page
+%h2 Total data (last 24 hours)
+
+= @daily_stats
+
+%h2 Breakdown by shift
+
+= @breakdown_by_time
+
+%h4
+  Questions:
+%li
+  Do we want to be able to look over a week?
+
+%h3 Outstanding alerts:
+
+%h4 The following alerts currently have not been acknowledged:
+
+%h4 The following alerts have been acknowledged, but not resolved:
