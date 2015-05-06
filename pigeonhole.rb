@@ -16,6 +16,15 @@ influxdb = Influx::Db.new
 pagerduty = Pagerduty.new
 
 get '/' do
+  @mapper = { 'ack' => 'Acknowleged',
+ 'resolve' => 'Resolved', 
+ 'stddev' => 'σ', 
+ '95_percentile' => '%',
+ 'mean' => 'x̄' }
+
+  @types = ["ack", "resolve"]
+  @stats = ["mean","stddev","95_percentile"]
+
   @daily_stats, @breakdown_by_time = influxdb.generate_daily_stats
   haml :"index"
 end

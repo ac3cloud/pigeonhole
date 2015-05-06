@@ -2,9 +2,15 @@
 
 = @daily_stats
 
-%h2 Breakdown by shift
+= haml :'_stats_table_test', :locals => { :title => "Today", :stats => @daily_stats[0] }
 
+%h2 Breakdown by shift
 = @breakdown_by_time
+
+ 
+- @breakdown_by_time.each do |b| 
+  = haml :'_stats_table_test', :locals => { :title => b["start_time"], :stats => b }
+
 
 %h4
   Questions:
