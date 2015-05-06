@@ -229,11 +229,12 @@ module Influx
 
     def generate_daily_stats
       # First, we grab the stats for the last 24 hours
-      select_str = "select count(incident_key), " + %w(ack resolve).map { |type|
+      aggregate_select_str = "select count(incident_key), " + %w(ack resolve).map { |type|
         "MEAN(time_to_#{type}) as #{type}_mean, STDDEV(time_to_#{type}) as #{type}_stddev, PERCENTILE(time_to_#{type}, 95) as #{type}_95_percentile"
       }.join(', ')
 
-      daily_stats = find_incidents(nil, nil, :query_select => select_str)
+      daily_stats = find_incidents(nil, nil, :query_select => aggregate_select_str).first
+      daily_stats['ack_percent_in_60s'] = ack_percent_before_timeout(:timeout => 60)
 
       breakdown_by_time = []
       # Sydney midnight is 14:00 UTC (previous day)
@@ -254,15 +255,24 @@ module Influx
 
       shift_times.each_with_index { |time, index|
         break if index + 1 == shift_times.length
-        start_time, finish_time = shift_times[index+1].to_s, time.to_s
-        x = find_incidents(start_time, finish_time, :query_select => select_str).first
-        # FIXME: add call for percentage of monitoring alerts acknowledged within 60 seconds
-        x['start_time'] = start_time
-        x['finish_time'] = finish_time
+        start_date, finish_date = shift_times[index+1].to_s, time.to_s
+        x = find_incidents(start_date, finish_date, :query_select => aggregate_select_str).first
+        x['ack_percent_in_60s'] = ack_percent_before_timeout(:start_date => start_date, :finish_date => finish_date, :timeout => 60)
+        x['start_date'] = start_date
+        x['finish_date'] = finish_date
         breakdown_by_time << x
       }
 
       [ daily_stats, breakdown_by_time ]
+    end
+
+    def ack_percent_before_timeout(opts)
+      select_str = "select time_to_ack"
+      incidents = find_incidents(opts[:start_date], opts[:end_date], :query_select => select_str)
+      total = incidents.count
+      timeout = opts[:timeout] || 60
+      under = incidents.reject { |x| x['time_to_ack'].nil? || x['time_to_ack'] > timeout }
+      100 * under.count / total
     end
 
     def save_categories(opts)
