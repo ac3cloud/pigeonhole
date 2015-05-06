@@ -1,0 +1,16 @@
+%div{:id => "stats"}
+  = locals[:title]
+  Incidents:
+  = locals[:stats]["count"]
+  %table
+    - ["",@stats].flatten.each do |s| 
+      %td
+        = @mapper[s] || s
+
+    - @types.each do |t|
+      %tr
+        %td
+          = @mapper[t]
+          - @stats.each do |s|
+            %td{:class => "#{s} value"}
+              = locals[:stats]["#{t}_#{s}"].to_i
