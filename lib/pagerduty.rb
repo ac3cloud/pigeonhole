@@ -117,4 +117,9 @@ class Pagerduty
     end
     oncall
   end
+
+  def incidents_from_webhook(data)
+    earliest = data['messages'].min { |x, y| x['data']['incident']['created_on'] <=> y['data']['incident']['created_on'] }
+    incidents(earliest)
+  end
 end

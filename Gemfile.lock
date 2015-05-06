@@ -9,6 +9,8 @@ GEM
       tzinfo (~> 1.1)
     bond (0.5.1)
     chronic (0.10.2)
+    chronic_duration (0.10.6)
+      numerizer (~> 0.1.1)
     citrus (3.0.2)
     coderay (1.1.0)
     haml (4.0.6)
@@ -26,6 +28,7 @@ GEM
     method_source (0.8.2)
     minitest (5.5.1)
     multi_xml (0.5.5)
+    numerizer (0.1.1)
     parallel (1.4.1)
     pry (0.10.1)
       coderay (~> 1.1.0)
@@ -74,6 +77,7 @@ PLATFORMS
 DEPENDENCIES
   activesupport
   chronic
+  chronic_duration
   haml
   httparty
   influxdb

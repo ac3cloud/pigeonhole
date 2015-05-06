@@ -1,6 +1,7 @@
 require 'influxdb'
 require 'time'
 require 'chronic'
+require 'chronic_duration'
 require 'toml'
 require 'active_support/core_ext/numeric/time'
 
@@ -23,11 +24,13 @@ module Influx
     end
 
     def insert_incidents(incidents)
+      return if incidents.empty?
       timeseries = @config['series']
-      entries = []
+      oldest = incidents.map { |x| Time.parse(x[:created_on]).to_i }.min - 1
+      newest = incidents.map { |x| Time.parse(x[:created_on]).to_i }.max + 1
       begin
-        entries = @influxdb.query "select id, time_to_resolve from #{timeseries}"
-        entries = entries[timeseries]
+        entries = @influxdb.query "select id, time_to_resolve from #{timeseries} where time > #{oldest}s and time < #{newest}s"
+        entries = entries.empty? ? [] : entries[timeseries]
       rescue InfluxDB::Error => e
         if e.message.match(/^Couldn't find series/)
           existing = []
@@ -36,7 +39,7 @@ module Influx
         end
       end
       incidents.each do |incident|
-        existing = entries.select{ |x| x['id'] == incident[:id] }
+        existing = entries.select { |x| x['id'] == incident[:id] }
         # Incidents can be in three states:
         # Not in InfluxDB (write as new point)
         # In InfluxDB, not resolved (re-write existing point with any new information)
@@ -51,7 +54,7 @@ module Influx
             incident['sequence_number'] = existing.first['sequence_number']
           else
             puts "Incident #{incident[:id]} is already in influxDB and has been resolved - skipping"
-            return
+            next
           end
         end
         incident.delete(:created_on)
@@ -65,7 +68,7 @@ module Influx
       end_date = Chronic.parse(end_date, :guess => false).last unless end_date.nil?
 
       # If we couldn't parse the given date, use the last 24 hours.
-      end_date = end_date.nil? ? Time.now.to_i : end_date.to_i
+      end_date = (end_date.nil? || end_date.to_i > Time.now.to_i) ? Time.now.to_i : end_date.to_i
       start_date = start_date.nil? ? end_date - (24 * 60 * 60) : start_date.to_i
 
       # As a default, select * from the timeframe.  Otherwise, use what the input query gave us
@@ -180,11 +183,67 @@ module Influx
       }.compact
     end
 
-    def save_categories(data)
+    def threshold_recommendations(opts)
+      data = find_incidents(opts[:start_date], opts[:end_date],
+                            :query_select => "select count(incident_key), percentile(time_to_resolve, #{opts[:percentage]}), max(time_to_resolve)",
+                            :conditions => "group by incident_key"
+             )
+      # Firstly, don't try to provide analysis for data where we have less than 5 instances of it
+      # Also remove alerts that don't have an incident key, or haven't been resolved yet.
+      recover_within = ChronicDuration.parse(opts[:recover_within]).to_i
+      raise "Failed to parse recover within" unless recover_within > 0
+      data.reject! { |x| x['percentile'].nil? || x['percentile'].to_i > recover_within || x['count'] < opts[:more_than].to_i || x['incident_key'].nil? }
+
+      sort_by = case options[:sort_by]
+      when 'frequency'
+        'count'
+      when 'threshold'
+        'percentile'
+      else
+        opts[:sort_by]
+      end
+      data = data.sort_by { |x| x[sort_by] }
+      data.reverse! if sort_by == 'frequency'
+
+      data.map do |d|
+        threshold = d['percentile'] + 5
+        formatted_threshold = case
+        when threshold < 60
+          "#{threshold} seconds"
+        when threshold < 120
+          div, mod = threshold.divmod(60)
+          "#{div} minute and #{mod} seconds"
+        else
+          div, mod = threshold.divmod(60)
+          "#{div} minutes and #{mod} seconds"
+        end
+        {
+          :incident_key => d['incident_key'],
+          :count => d['count'],
+          :fixed => (d['count'] * opts[:percentage].to_i / 100).floor,
+          :threshold => threshold,
+          :formatted_threshold => formatted_threshold
+        }
+      end
+    end
+
+    def save_categories(opts)
+      return if opts[:data].empty?
       timeseries = @config['series']
-      data.each do |incident, category|
-        query = "select * from #{timeseries} where id = '#{incident}'"
-        current_point = @influxdb.query(query)[timeseries].first
+      oldest =  Chronic.parse(opts[:start_date], :guess => false).first.to_i
+      newest =  Chronic.parse(opts[:end_date], :guess => false).last.to_i
+      begin
+        entries = @influxdb.query "select * from #{timeseries} where time > #{oldest}s and time < #{newest}s"
+        entries = entries.empty? ? [] : entries[timeseries]
+      rescue InfluxDB::Error => e
+        if e.message.match(/^Couldn't find series/)
+          entries = []
+        else
+          raise
+        end
+      end
+      opts[:data].each do |incident, category|
+        current_point = entries.select { |x| x['id'] == incident }.first
         current_point['category'] = category
         @influxdb.write_point(timeseries, current_point)
       end

@@ -8,8 +8,13 @@ require 'haml'
 require 'date'
 require 'highcharts'
 require 'uri'
+require 'pagerduty'
+require 'methadone'
+
+include Methadone::CLILogging
 
 influxdb = Influx::Db.new
+pagerduty = Pagerduty.new
 
 get '/' do
   today = Time.now.strftime("%Y-%m-%d")
@@ -93,12 +98,36 @@ end
 
 post '/:start_date/:end_date' do
   uri = "#{params["start_date"]}/#{params["end_date"]}?search=#{params["search"]}"
+  opts = {
+    :start_date => params[:"start_date"],
+    :end_date   => params[:end_date]
+  }
   params.delete("start_date")
   params.delete("end_date")
   params.delete("search")
   params.delete("splat")
   params.delete("captures")
 
-  influxdb.save_categories(params)
+  opts[:data] = params
+  influxdb.save_categories(opts)
   redirect "/#{uri}"
+end
+
+post '/pagerduty' do
+  request.body.rewind  # in case someone already read it
+  data = JSON.parse(request.body.read)
+  begin
+    incidents = pagerduty.incidents_from_webhook(data)
+    raise 'No incidents found' if incidents.empty?
+    incident_ids = incidents.map { |x| x[:id] }
+    influxdb.insert_incidents(incidents)
+    status 200
+    "Inserted incidents: #{incident_ids.join(', ')}"
+  rescue RuntimeError => e
+    status 500
+    {
+      :error => e.class,
+      :message => e.message
+    }.to_json
+  end
 end
