@@ -1,16 +1,11 @@
 %h2 Total data (last 24 hours)
 
-= @daily_stats
-
-= haml :'_stats_table', :locals => { :title => "Today", :stats => @daily_stats[0] }
+= haml :'_stats_table', :locals => { :stats => @daily_stats }
 
 %h2 Breakdown by shift
-= @breakdown_by_time
-
  
-- @breakdown_by_time.each do |b| 
-  = haml :'_stats_table', :locals => { :title => b["start_time"], :stats => b }
-
+- @breakdown_by_time.each do |b|
+  = haml :'_stats_table', :locals => { :stats => b }
 
 %h4
   Questions:

@@ -19,7 +19,7 @@ get '/' do
   @mapper = { 'ack' => 'Acknowleged',
  'resolve' => 'Resolved', 
  'stddev' => 'σ', 
- '95_percentile' => '%',
+ '95_percentile' => '95%',
  'mean' => 'x̄' }
 
   @types = ["ack", "resolve"]

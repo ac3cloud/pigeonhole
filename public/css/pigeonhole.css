@@ -35,3 +35,34 @@ form#incidents th#category {
   color: #666;
   text-decoration: none;
 }
+
+.stats_table { 
+  display: inline-block;
+  margin: 20px; 
+} 
+
+.stats_table .title { 
+  font-weight: bold;
+  display: inline-block;
+} 
+
+.stats_table .incidents { 
+  display: inline-block;
+}
+
+.stats_table td { 
+  text-align: right; 
+} 
+
+.stats_table .row_header { 
+  font-weight: bold
+} 
+
+.stats_table .col_header {
+  align: center; 
+  font-weight: bold
+} 
+
+.stats_table table td {
+  padding: 5px;
+} 
