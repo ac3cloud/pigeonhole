@@ -7,13 +7,16 @@
 - @breakdown_by_time.each do |b|
   = haml :'_stats_table', :locals => { :stats => b }
 
-%h4
-  Questions:
-%li
-  Do we want to be able to look over a week?
-
 %h3 Outstanding alerts:
 
-%h4 The following alerts currently have not been acknowledged:
+- if @unacked.length > 0 
+  %h4 The following alerts currently have not been acknowledged:
+  = haml :'_incident_table', :locals => { :incidents => @unacked }
 
-%h4 The following alerts have been acknowledged, but not resolved:
+- if @unresolved.length > 0
+  %h4 The following alerts have been acknowledged, but not resolved:
+  = haml :'_incident_table', :locals => { :incidents => @unresolved }
+
+
+- if @unacked.length == 0 && @unresolved.length == 0
+  No outstanding alerts. Everything is hunky-dory. 

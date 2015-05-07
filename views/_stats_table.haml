@@ -2,7 +2,7 @@
   %div{:class => "title"}
     = locals[:stats]["title"]
   %div{:class => "incidents"}
-    = locals[:stats]["count"]
+    = locals[:stats]["count"] || 0
     incidents
   %div{:class => "s_ack"}
     Ack in 60s:

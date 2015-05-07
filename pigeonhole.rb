@@ -30,6 +30,9 @@ get '/' do
   @stats = ["mean","stddev","95_percentile"]
 
   @daily_stats, @breakdown_by_time = influxdb.generate_daily_stats
+  @unacked, @unresolved = influxdb.unaddressed_alerts
+  @unacked ||= [] 
+  @unresolved ||= [] 
   haml :"index"
 end
 

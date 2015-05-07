@@ -227,6 +227,35 @@ module Influx
       end
     end
 
+    def unaddressed_alerts
+      start_date = Date.today.prev_day.strftime('%F')
+      end_date = Date.today.strftime('%F')
+      incidents = find_incidents(start_date, end_date) ##TODO eep
+      return [] if incidents.empty?
+      unacked = []
+      unresolved = []
+      incidents.map { |incident|
+        next if incident['incident_key'].nil?
+        entity, check = incident['incident_key'].split(':', 2)
+        member = {
+          'alert_time' => incident["time"],
+          'id' => incident['id'],
+          'entity' => entity,
+          'check'  => check,
+          'ack_by' => incident['acknowledge_by'],
+          'time_to_ack' => incident['time_to_ack'],
+          'time_to_resolve' => incident['time_to_resolve']
+        }
+        if member["time_to_ack"].nil? && member["time_to_resolve"].nil?
+ 	    unacked << member
+        elsif member["time_to_resolve"].nil?
+            puts incident
+            unresolved << member
+        end
+      }
+      [unacked, unresolved] 
+    end
+
     def generate_daily_stats
       # First, we grab the stats for the last 24 hours
       aggregate_select_str = "select count(incident_key), " + %w(ack resolve).map { |type|
