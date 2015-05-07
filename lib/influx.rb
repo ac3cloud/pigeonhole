@@ -251,8 +251,7 @@ module Influx
         ]
       }.flatten
       shift_times.reject! { |x| x.to_i > Time.now.to_i }
-      # FIXME: remove hardcoded 4
-      shift_times = shift_times.push(Time.now.utc).sort.reverse[0..4]
+      shift_times = shift_times.push(Time.now.utc).sort.reverse[0..(shift_names.length + 1)]
 
       shift_times.each_with_index { |time, index|
         break if index + 1 == shift_times.length
