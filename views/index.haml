@@ -1,11 +1,14 @@
-%h2 Total data (last 24 hours)
+%div{:class => "today"}
 
-= haml :'_stats_table', :locals => { :stats => @daily_stats }
+  %h2 Total data (last 24 hours)
 
-%h2 Breakdown by shift
+  = haml :'_stats_table', :locals => { :stats => @daily_stats }
+
+%div{:class => "shifts"}
+  %h2 Breakdown by shift
  
-- @breakdown_by_time.each do |b|
-  = haml :'_stats_table', :locals => { :stats => b }
+  - @breakdown_by_time.each do |b|
+    = haml :'_stats_table', :locals => { :stats => b }
 
 %h3 Outstanding alerts:
 
