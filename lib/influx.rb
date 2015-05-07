@@ -235,15 +235,16 @@ module Influx
 
       daily_stats = find_incidents(nil, nil, :query_select => aggregate_select_str).first || {}
       daily_stats['ack_percent_in_60s'] = ack_percent_before_timeout(:timeout => 60) || 0
+      daily_stats["title"] = "Last 24 hours"
 
       breakdown_by_time = []
       # Sydney midnight is 14:00 UTC (previous day)
       # Sydney 8am is 22:00 UTC (previous day)
       # Sydney 4pm is 06:00 UTC
-      # FIXME: this needs to move to the config file and allow shift names
 
       # Here, we aim to pull down data for the last 3 full shifts (ie, the last 24 hours), plus the partial shift currently running
-      shift_times = %w(14 22 06).map { |x|
+      shift_names = { 14 => "Third Shift", 22 => "First Shift", 06 => "Second Shift" }
+      shift_times = shift_names.keys.map { |x|
         [
           Chronic.parse("#{Date.today.strftime('%F')} #{x}:00:00 utc"),
           Chronic.parse("#{Date.today.prev_day.strftime('%F')} #{x}:00:00 utc")
@@ -260,6 +261,7 @@ module Influx
         x['ack_percent_in_60s'] = ack_percent_before_timeout(:start_date => start_date, :finish_date => finish_date, :timeout => 60)
         x['start_date'] = start_date
         x['finish_date'] = finish_date
+        x['title'] = shift_names[shift_times[index+1].hour]
         breakdown_by_time << x
       }
 
