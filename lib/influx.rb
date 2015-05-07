@@ -233,8 +233,8 @@ module Influx
         "MEAN(time_to_#{type}) as #{type}_mean, STDDEV(time_to_#{type}) as #{type}_stddev, PERCENTILE(time_to_#{type}, 95) as #{type}_95_percentile"
       }.join(', ')
 
-      daily_stats = find_incidents(nil, nil, :query_select => aggregate_select_str).first
-      daily_stats['ack_percent_in_60s'] = ack_percent_before_timeout(:timeout => 60)
+      daily_stats = find_incidents(nil, nil, :query_select => aggregate_select_str).first || {}
+      daily_stats['ack_percent_in_60s'] = ack_percent_before_timeout(:timeout => 60) || 0
 
       breakdown_by_time = []
       # Sydney midnight is 14:00 UTC (previous day)
@@ -256,7 +256,7 @@ module Influx
       shift_times.each_with_index { |time, index|
         break if index + 1 == shift_times.length
         start_date, finish_date = shift_times[index+1].to_s, time.to_s
-        x = find_incidents(start_date, finish_date, :query_select => aggregate_select_str).first
+        x = find_incidents(start_date, finish_date, :query_select => aggregate_select_str).first || {}
         x['ack_percent_in_60s'] = ack_percent_before_timeout(:start_date => start_date, :finish_date => finish_date, :timeout => 60)
         x['start_date'] = start_date
         x['finish_date'] = finish_date
@@ -270,6 +270,7 @@ module Influx
       select_str = "select time_to_ack"
       incidents = find_incidents(opts[:start_date], opts[:end_date], :query_select => select_str)
       total = incidents.count
+      return 0 if total == 0
       timeout = opts[:timeout] || 60
       under = incidents.reject { |x| x['time_to_ack'].nil? || x['time_to_ack'] > timeout }
       100 * under.count / total
