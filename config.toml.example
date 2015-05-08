@@ -9,7 +9,7 @@
 [pagerduty]
   # Auth token can be given with or without the preceding 'Token token='
   auth_token = "2731ca1f7ee10ed57311"
-  api_url    = "https://mycompany.pagerduty.com/api/v1"
+  account_name = "mycompany"
   time_zone  = "Sydney"
 
 [pagerduty.schedules]

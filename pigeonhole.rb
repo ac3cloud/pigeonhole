@@ -46,6 +46,7 @@ get '/:start_date/:end_date' do
   ]
   @start_date = params["start_date"]
   @end_date   = params["end_date"]
+  @pagerduty_url = pagerduty.api_url
   @incidents = influxdb.find_incidents(@start_date, @end_date)
   haml :"index"
 end
@@ -68,6 +69,7 @@ get '/alert-response/:start_date/:end_date' do
   @incidents  = resp[:incidents] || []
   @total      = @incidents.count
   @acked      = @incidents.reject { |x| x['ack_by'].nil? }.count
+  @pagerduty_url = pagerduty.api_url
   @incidents.each do |incident|
     incident['entity'], incident['check'] = incident['incident_key'].split(':', 2)
     incident['ack_by'] = 'N/A' if incident['ack_by'].nil?
