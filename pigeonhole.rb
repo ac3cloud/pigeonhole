@@ -15,28 +15,40 @@ include Methadone::CLILogging
 influxdb = Influx::Db.new
 pagerduty = Pagerduty.new
 
+def today
+  Time.now.strftime("%Y-%m-%d")
+end
+
 get '/' do
+  @mapper = { 'ack' => 'Acknowleged',
+ 'resolve' => 'Resolved', 
+ 'stddev' => 'σ', 
+ '95_percentile' => '95%',
+ 'mean' => 'x̄' }
+
+  @types = ["ack", "resolve"]
+  @stats = ["mean","stddev","95_percentile"]
+
   @daily_stats, @breakdown_by_time = influxdb.generate_daily_stats
+  @unacked, @unresolved = influxdb.unaddressed_alerts
+  @unacked ||= [] 
+  @unresolved ||= [] 
   haml :"index"
 end
 
 get '/categorisation/?' do
-  today = Time.now.strftime("%Y-%m-%d")
   redirect "/categorisation/#{today}/#{today}"
 end
 
 get '/alert-frequency/?' do
-  today = Time.now.strftime("%Y-%m-%d")
   redirect "/alert-frequency/#{today}/#{today}"
 end
 
 get '/alert-response/?' do
-  today = Time.now.strftime("%Y-%m-%d")
   redirect "/alert-response/#{today}/#{today}"
 end
 
 get '/noise-candidates/?' do
-  today = Time.now.strftime("%Y-%m-%d")
   redirect "/noise-candidates/#{today}/#{today}"
 end
 
