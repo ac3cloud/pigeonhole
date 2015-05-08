@@ -249,7 +249,6 @@ module Influx
         if member["time_to_ack"].nil? && member["time_to_resolve"].nil?
  	    unacked << member
         elsif member["time_to_resolve"].nil?
-            puts incident
             unresolved << member
         end
       }
