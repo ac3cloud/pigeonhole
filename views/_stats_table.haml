@@ -1,0 +1,24 @@
+%div{:class => "stats_table"}
+  %div{:class => "title"}
+    = locals[:stats]["title"]
+  %div{:class => "incidents"}
+    = locals[:stats]["count"] || 0
+    incidents
+  %div{:class => "s_ack"}
+    Ack in 60s:
+    = "#{locals[:stats]["ack_percent_in_60s"]}%"
+  %div{:class => "data_table"}
+    %table
+      - ["",@stats].flatten.each do |s| 
+        %td
+          %span{:class => "col_header", :title => "#{s}"}
+            = @mapper[s] || s
+  
+      - @types.each do |t|
+        %tr
+          %td
+            %span{:class => "row_header"}
+              = @mapper[t]
+            - @stats.each do |s|
+              %td{:class => "#{s} value"}
+                = locals[:stats]["#{t}_#{s}"].to_i

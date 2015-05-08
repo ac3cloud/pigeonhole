@@ -1,47 +1,25 @@
-%h3#handled-incidents
-  %i.fa.fa-bullhorn
-  %span.label.label-default.count= @incidents.size
-  %span
-  - if @start_date == @end_date
-    alerts handled on
-    = @start_date
-  - else
-    alerts handled between
-    = @start_date
-    and
-    = @end_date
+%div{:class => "today"}
 
-%form{:action => '', :method => 'post', :role => 'form', :class => 'form', :id => 'incidents'}
-  %table#incidents-table.table.table-hover.table-striped.table-bordered.table-condensed.tablesorter
-    %thead
-      %tr
-        %th#id
-          \#
-        %th#incident
-          Incident
-        %th#description
-          Description
-        %th#time
-          Time
-        %th#category
-          Category
-    %tbody
-      - @incidents.each_with_index do |incident, index|
-        - id = incident['id']
-        %tr
-          %td= index + 1
-          %td
-            %a{:href => "https://bltprf.pagerduty.com/incidents/#{id}"}= id
-          %td= incident['description']
-          %td= Time.at(incident['time'])
-          %td
-            %select{:name => id, :id => id, :class => "form-control"}
-              -@categories.each do |category|
-                - display_name = category == "self recovered" ? "recovered without intervention" : category
-                - if incident['category'] && category == incident['category']
-                  %option{:value => category, :selected => true}= display_name
-                - else
-                  %option{:value => category}= display_name
+  %h2 Total data (last 24 hours)
 
-  %p.text-right
-    %input{:type => "submit", :value => "save", :class => "btn btn-warning"}
+  = haml :'_stats_table', :locals => { :stats => @daily_stats }
+
+%div{:class => "shifts"}
+  %h2 Breakdown by shift
+ 
+  - @breakdown_by_time.each do |b|
+    = haml :'_stats_table', :locals => { :stats => b }
+
+%h3 Outstanding alerts:
+
+- if @unacked.length > 0 
+  %h4 The following alerts currently have not been acknowledged:
+  = haml :'_incident_table', :locals => { :incidents => @unacked }
+
+- if @unresolved.length > 0
+  %h4 The following alerts have been acknowledged, but not resolved:
+  = haml :'_incident_table', :locals => { :incidents => @unresolved }
+
+
+- if @unacked.length == 0 && @unresolved.length == 0
+  No outstanding alerts. Everything is hunky-dory. 

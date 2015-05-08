@@ -227,6 +227,84 @@ module Influx
       end
     end
 
+    def unaddressed_alerts
+      start_date = Date.today.prev_day.strftime('%F')
+      end_date = Date.today.strftime('%F')
+      incidents = find_incidents(start_date, end_date) ##TODO eep
+      return [] if incidents.empty?
+      unacked = []
+      unresolved = []
+      incidents.map { |incident|
+        next if incident['incident_key'].nil?
+        entity, check = incident['incident_key'].split(':', 2)
+        member = {
+          'alert_time' => incident["time"],
+          'id' => incident['id'],
+          'entity' => entity,
+          'check'  => check,
+          'ack_by' => incident['acknowledge_by'],
+          'time_to_ack' => incident['time_to_ack'],
+          'time_to_resolve' => incident['time_to_resolve']
+        }
+        if member["time_to_ack"].nil? && member["time_to_resolve"].nil?
+ 	    unacked << member
+        elsif member["time_to_resolve"].nil?
+            unresolved << member
+        end
+      }
+      [unacked, unresolved] 
+    end
+
+    def generate_daily_stats
+      # First, we grab the stats for the last 24 hours
+      aggregate_select_str = "select count(incident_key), " + %w(ack resolve).map { |type|
+        "MEAN(time_to_#{type}) as #{type}_mean, STDDEV(time_to_#{type}) as #{type}_stddev, PERCENTILE(time_to_#{type}, 95) as #{type}_95_percentile"
+      }.join(', ')
+
+      daily_stats = find_incidents(nil, nil, :query_select => aggregate_select_str).first || {}
+      daily_stats['ack_percent_in_60s'] = ack_percent_before_timeout(:timeout => 60) || 0
+      daily_stats["title"] = "Last 24 hours"
+
+      breakdown_by_time = []
+      # Sydney midnight is 14:00 UTC (previous day)
+      # Sydney 8am is 22:00 UTC (previous day)
+      # Sydney 4pm is 06:00 UTC
+
+      # Here, we aim to pull down data for the last 3 full shifts (ie, the last 24 hours), plus the partial shift currently running
+      shift_names = { 14 => "Third Shift", 22 => "First Shift", 06 => "Second Shift" }
+      shift_times = shift_names.keys.map { |x|
+        [
+          Chronic.parse("#{Date.today.strftime('%F')} #{x}:00:00 utc"),
+          Chronic.parse("#{Date.today.prev_day.strftime('%F')} #{x}:00:00 utc")
+        ]
+      }.flatten
+      shift_times.reject! { |x| x.to_i > Time.now.to_i }
+      shift_times = shift_times.push(Time.now.utc).sort.reverse[0..(shift_names.length + 1)]
+
+      shift_times.each_with_index { |time, index|
+        break if index + 1 == shift_times.length
+        start_date, finish_date = shift_times[index+1].to_s, time.to_s
+        x = find_incidents(start_date, finish_date, :query_select => aggregate_select_str).first || {}
+        x['ack_percent_in_60s'] = ack_percent_before_timeout(:start_date => start_date, :finish_date => finish_date, :timeout => 60)
+        x['start_date'] = start_date
+        x['finish_date'] = finish_date
+        x['title'] = shift_names[shift_times[index+1].hour]
+        breakdown_by_time << x
+      }
+
+      [ daily_stats, breakdown_by_time ]
+    end
+
+    def ack_percent_before_timeout(opts)
+      select_str = "select time_to_ack"
+      incidents = find_incidents(opts[:start_date], opts[:end_date], :query_select => select_str)
+      total = incidents.count
+      return 0 if total == 0
+      timeout = opts[:timeout] || 60
+      under = incidents.reject { |x| x['time_to_ack'].nil? || x['time_to_ack'] > timeout }
+      100 * under.count / total
+    end
+
     def save_categories(opts)
       return if opts[:data].empty?
       timeseries = @config['series']

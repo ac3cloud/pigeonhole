@@ -1,0 +1,29 @@
+%form{:action => '', :method => 'post', :role => 'form', :class => 'form', :id => 'ackresolution'}
+  %table#incidents-table.table.table-hover.table-striped.table-bordered.table-condensed.tablesorter
+    %thead
+      %tr
+        %th#alert_time.col-md-2
+          Time of alert
+        %th#alert_id.col-md-1
+          ID
+        %th#entity.col-md-3
+          Entity
+        %th#check.col-md-2
+          Check
+        %th#ack_by.col-md-1
+          Acknowledged by
+        %th#ack.col-md-1
+          Time to Acknowledge
+        %th#resolve.col-md-1
+          Time to Resolve
+    %tbody
+      - locals[:incidents].each do |incident|
+        %tr
+          %td= Time.at(incident['alert_time'])
+          %td
+            %a{:href => "https://bltprf.pagerduty.com/incidents/#{incident['id']}"}= incident['id']
+          %td= incident['entity']
+          %td= incident['check']
+          %td= incident['ack_by']
+          %td= incident['time_to_ack']
+          %td= incident['time_to_resolve']

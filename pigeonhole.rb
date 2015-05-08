@@ -15,27 +15,44 @@ include Methadone::CLILogging
 influxdb = Influx::Db.new
 pagerduty = Pagerduty.new
 
+def today
+  Time.now.strftime("%Y-%m-%d")
+end
+
 get '/' do
-  today = Time.now.strftime("%Y-%m-%d")
-  redirect "/#{today}/#{today}"
+  @mapper = { 'ack' => 'Acknowleged',
+ 'resolve' => 'Resolved', 
+ 'stddev' => 'σ', 
+ '95_percentile' => '95%',
+ 'mean' => 'x̄' }
+
+  @types = ["ack", "resolve"]
+  @stats = ["mean","stddev","95_percentile"]
+
+  @daily_stats, @breakdown_by_time = influxdb.generate_daily_stats
+  @unacked, @unresolved = influxdb.unaddressed_alerts
+  @unacked ||= [] 
+  @unresolved ||= [] 
+  haml :"index"
+end
+
+get '/categorisation/?' do
+  redirect "/categorisation/#{today}/#{today}"
 end
 
 get '/alert-frequency/?' do
-  today = Time.now.strftime("%Y-%m-%d")
   redirect "/alert-frequency/#{today}/#{today}"
 end
 
 get '/alert-response/?' do
-  today = Time.now.strftime("%Y-%m-%d")
   redirect "/alert-response/#{today}/#{today}"
 end
 
 get '/noise-candidates/?' do
-  today = Time.now.strftime("%Y-%m-%d")
   redirect "/noise-candidates/#{today}/#{today}"
 end
 
-get '/:start_date/:end_date' do
+get '/categorisation/:start_date/:end_date' do
   @categories = [
     'not set',
     'real',
@@ -47,7 +64,7 @@ get '/:start_date/:end_date' do
   @start_date = params["start_date"]
   @end_date   = params["end_date"]
   @incidents = influxdb.find_incidents(@start_date, @end_date)
-  haml :"index"
+  haml :"categorisation"
 end
 
 get '/alert-frequency/:start_date/:end_date' do
@@ -85,7 +102,7 @@ get '/noise-candidates/:start_date/:end_date' do
   haml :"noise-candidates"
 end
 
-post '/:start_date/:end_date' do
+post '/categorisation/:start_date/:end_date' do
   uri = "#{params["start_date"]}/#{params["end_date"]}"
   opts = {
     :start_date => params[:"start_date"],
