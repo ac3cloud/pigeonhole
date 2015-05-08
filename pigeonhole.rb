@@ -88,7 +88,7 @@ end
 post '/:start_date/:end_date' do
   uri = "#{params["start_date"]}/#{params["end_date"]}"
   opts = {
-    :start_date => params[:"start_date"],
+    :start_date => params[:start_date],
     :end_date   => params[:end_date]
   }
   params.delete("start_date")
