@@ -10,7 +10,7 @@ class Pagerduty
     @config['auth_token'] = "Token token=#{@config['auth_token']}" unless @config['auth_token'].start_with?('Token token=')
   end
 
-  def api_url
+  def pagerduty_url
     "https://#{@config['account_name']}.pagerduty.com"
   end
 
@@ -42,7 +42,7 @@ class Pagerduty
   def incidents(start_date, finish_date = nil)
     finish_clause     = finish_date ? finish_clause = "&until=#{finish_date}" : ""
     time_zone = @config['time_zone']
-    endpoint  = "#{self.api_url}/api/v1/incidents?since=#{start_date}#{finish_clause}&time_zone=#{time_zone}"
+    endpoint  = "#{self.pagerduty_url}/api/v1/incidents?since=#{start_date}#{finish_clause}&time_zone=#{time_zone}"
     response  = request(endpoint)
     incidents = response.map do |incident|
       tmp = {
@@ -65,7 +65,7 @@ class Pagerduty
   def add_ack_resolve(incidents)
     Parallel.each(incidents, :in_threads => 20) do |incident|
       incident_id      = incident[:id]
-      log              = request("#{self.api_url}/api/v1/incidents/#{incident_id}/log_entries").sort_by { |x| x['created_at'] }
+      log              = request("#{self.pagerduty_url}/api/v1/incidents/#{incident_id}/log_entries").sort_by { |x| x['created_at'] }
       problem          = log.select { |x| x['type'] == 'trigger' }.first
       problem_time     = Time.parse(problem['created_at'])
       acknowledge_by   = nil
@@ -110,7 +110,7 @@ class Pagerduty
     until_date = Time.parse("#{until_date.strftime('%F')} 09:30:00") # 09:30h end
     oncall = {}
     schedules.each do |name, schedule|
-      endpoint = "#{self.api_url}/schedules/#{schedule}/users?since=#{since_date.iso8601}&until=#{until_date.iso8601}"
+      endpoint = "#{self.pagerduty_url}/schedules/#{schedule}/users?since=#{since_date.iso8601}&until=#{until_date.iso8601}"
       response = request(endpoint)
       response['users'].each do |user|
         oncall[name.to_sym] ||= []
