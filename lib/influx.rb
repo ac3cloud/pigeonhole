@@ -102,7 +102,7 @@ module Influx
     end
 
     def alert_response(start_date = nil, end_date = nil, precondition = "")
-      incidents = find_incidents(start_date, end_date, { :conditions => precondition })
+      incidents = find_incidents(start_date, end_date, :conditions => precondition )
       return {} if incidents.empty?
       results = incidents.map { |incident|
         next if incident['incident_key'].nil?
