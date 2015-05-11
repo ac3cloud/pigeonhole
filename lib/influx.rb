@@ -33,7 +33,7 @@ module Influx
         entries = entries.empty? ? [] : entries[timeseries]
       rescue InfluxDB::Error => e
         if e.message.match(/^Couldn't find series/)
-          existing = []
+          entries = []
         else
           raise
         end
