@@ -1,10 +1,14 @@
 [influxdb]
   host     = "1.2.3.4"
   port     = 8086
-  username = "pigeonhole"
-  password = "mypassword"
   database = "pigeonhole"
   series   = "pigeonhole"
+  username = "pigeonhole"
+  password = "mypassword"
+
+  # Special read-write user for data alteration
+  username_rw = "pigeonhole_rw"
+  password_rw = "verysecurepassword"
 
 [pagerduty]
   # Auth token can be given with or without the preceding 'Token token='

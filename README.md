@@ -13,6 +13,29 @@ Pigeonhole requires the following:
 
 After these have been installed, copy the config.toml.example file to config.toml, and update it with your details.
 
+Pigeonhole operates as a read-only user with the exception of the categorisation. If you're using the categorisation feature you'll have to add a read-write user as well.
+
+To setup the two users, the following commands can be invoked (works for InfluxDB 0.8.8): 
+
+```
+INFLUX=http://localhost:8086
+USER=root
+PASS=root
+AUTH="u=$USER&p=$PASS"
+
+# Create a read-only user
+curl -X POST "$INFLUX/db/pigeonhole/users?$AUTH" -d '{"name": "pigeonhole",    "password": "pigeonhole__password"}'
+curl -X POST "$INFLUX/db/pigeonhole/users/pigeonhole?$AUTH" -d '{ "readFrom": ".*",  "writeTo": "^$"}'
+
+# Create a user that can read and write, for categorisation and data importing
+curl -X POST "$INFLUX/db/pigeonhole/users?$AUTH" -d '{"name": "pigeonhole_rw", "password": "pigeonhole_otherpass"}'
+
+# check the listing
+curl "$INFLUX/db/pigeonhole/users?$AUTH"
+
+```
+
+
 ## Usage
 
 There are multiple parts to Pigeonhole:
