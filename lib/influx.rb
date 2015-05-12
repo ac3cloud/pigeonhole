@@ -9,18 +9,18 @@ module Influx
   class Db
     def initialize
       @config     = TOML.load_file('config.toml')['influxdb']
-      raise "Could not load credentials file at config.toml" if @config.nil? || @config.empty?
+      fail 'Could not load credentials file at config.toml' if @config.nil? || @config.empty?
       database    = @config['database']
       credentials = {
-        :host           => @config['host'],
-        :username       => @config['username'],
-        :password       => @config['password'],
-        :port           => @config['port'],
-        :time_precision => 's'
+        host: @config['host'],
+        username: @config['username'],
+        password: @config['password'],
+        port: @config['port'],
+        time_precision: 's'
       }
       @influxdb = InfluxDB::Client.new(database, credentials)
       # FIXME: @influx.stopped? always returns nil in the 0.8 series
-      fail("could not connect to influxdb") if @influxdb.stopped?
+      fail('could not connect to influxdb') if @influxdb.stopped?
     end
 
     def insert_incidents(incidents)
@@ -64,8 +64,8 @@ module Influx
 
     def find_incidents(start_date = nil, end_date = nil, query_input = nil)
       timeseries = @config['series']
-      start_date = Chronic.parse(start_date, :guess => false).first unless start_date.nil?
-      end_date = Chronic.parse(end_date, :guess => false).last unless end_date.nil?
+      start_date = Chronic.parse(start_date, guess: false).first unless start_date.nil?
+      end_date = Chronic.parse(end_date, guess: false).last unless end_date.nil?
 
       # If we couldn't parse the given date, use the last 24 hours.
       end_date = (end_date.nil? || end_date.to_i > Time.now.to_i) ? Time.now.to_i : end_date.to_i
@@ -83,14 +83,14 @@ module Influx
       incidents[timeseries] ? incidents[timeseries] : []
     end
 
-    def incident_frequency(start_date = nil, end_date = nil, precondition = "")
+    def incident_frequency(start_date = nil, end_date = nil, precondition = '')
       query_input = {
-        :query_select => "select count(incident_key), incident_key",
-        :conditions => "#{precondition} group by incident_key"
+        query_select: 'select count(incident_key), incident_key',
+        conditions: "#{precondition} group by incident_key"
       }
-      incidents = find_incidents(start_date, end_date, query_input).sort_by { |k| k["count"] }.reverse
+      incidents = find_incidents(start_date, end_date, query_input).sort_by { |k| k['count'] }.reverse
       return [] if incidents.empty?
-      incidents.map { |incident|
+      incidents.map do |incident|
         next if incident['incident_key'].nil?
         entity, check = incident['incident_key'].split(':', 2)
         {
@@ -98,13 +98,13 @@ module Influx
           'entity' => entity,
           'check'  => check
         }
-      }.compact
+      end.compact
     end
 
-    def alert_response(start_date = nil, end_date = nil, precondition = "")
-      incidents = find_incidents(start_date, end_date, :conditions => precondition )
+    def alert_response(start_date = nil, end_date = nil, precondition = '')
+      incidents = find_incidents(start_date, end_date, conditions: precondition)
       return {} if incidents.empty?
-      results = incidents.map { |incident|
+      results = incidents.map do |incident|
         next if incident['incident_key'].nil?
         time_to_ack = incident['time_to_ack'].nil? ? 0 : (incident['time_to_ack'] / 60.0).ceil
         time_to_resolve = incident['time_to_resolve'].nil? ? 0 : (incident['time_to_resolve'] / 60.0).ceil
@@ -117,7 +117,7 @@ module Influx
           'time_to_ack' => time_to_ack,
           'time_to_resolve' => time_to_resolve
         }
-      }.compact
+      end.compact
 
       # The rest of this function is to make the graph work:
       # Only a certain number of points are meaningful.
@@ -140,9 +140,9 @@ module Influx
 
       unless group_by.nil?
         aggregated = find_incidents(start_date, end_date,
-                                    :query_select => "select mean(time_to_ack) as mean_ack, mean(time_to_resolve) as mean_resolve",
-                                    :conditions => "#{precondition} group by time(#{group_by})"
-                    )
+                                    query_select: 'select mean(time_to_ack) as mean_ack, mean(time_to_resolve) as mean_resolve',
+                                    conditions: "#{precondition} group by time(#{group_by})"
+                                   )
         aggregated.each do |incident|
           incident['mean_ack'] = incident['mean_ack'].nil? ? 0 : (incident['mean_ack'] / 60.0).ceil
           incident['mean_resolve'] = incident['mean_resolve'].nil? ? 0 : (incident['mean_resolve'] / 60.0).ceil
@@ -152,26 +152,26 @@ module Influx
       # However, we always want to do the count over at least one hour (or matching the aggregation above)
       count_group_by = group_by.nil? ? '1h' : group_by
       count = find_incidents(start_date, end_date,
-                             :query_select => "select count(incident_key)",
-                             :conditions => "#{precondition} group by time(#{count_group_by}) fill(0)"
-              ).sort_by { |k| k["count"] }.reverse
+                             query_select: 'select count(incident_key)',
+                             conditions: "#{precondition} group by time(#{count_group_by}) fill(0)"
+                            ).sort_by { |k| k['count'] }.reverse
 
       {
-        :incidents      => results,
-        :aggregated     => aggregated,
-        :count          => count,
-        :count_group_by => count_group_by
+        incidents: results,
+        aggregated: aggregated,
+        count: count,
+        count_group_by: count_group_by
       }
     end
 
-    def noise_candidates(start_date = nil, end_date = nil, precondition = "")
+    def noise_candidates(start_date = nil, end_date = nil, precondition = '')
       query_input = {
-        :query_select => "select count(incident_key), incident_key, mean(time_to_resolve)",
-        :conditions => "#{precondition} and time_to_resolve < 120 group by incident_key"
+        query_select: 'select count(incident_key), incident_key, mean(time_to_resolve)',
+        conditions: "#{precondition} and time_to_resolve < 120 group by incident_key"
       }
-      incidents = find_incidents(start_date, end_date, query_input).sort_by { |k| k["count"] }.reverse
+      incidents = find_incidents(start_date, end_date, query_input).sort_by { |k| k['count'] }.reverse
       return [] if incidents.empty?
-      incidents.map { |incident|
+      incidents.map do |incident|
         next if incident['incident_key'].nil?
         entity, check = incident['incident_key'].split(':', 2)
         {
@@ -180,18 +180,18 @@ module Influx
           'check'  => check,
           'mean_time_to_resolve' => incident['mean'].to_i
         }
-      }.compact
+      end.compact
     end
 
     def threshold_recommendations(opts)
       data = find_incidents(opts[:start_date], opts[:end_date],
-                            :query_select => "select count(incident_key), percentile(time_to_resolve, #{opts[:percentage]}), max(time_to_resolve)",
-                            :conditions => "group by incident_key"
-             )
+                            query_select: "select count(incident_key), percentile(time_to_resolve, #{opts[:percentage]}), max(time_to_resolve)",
+                            conditions: 'group by incident_key'
+                           )
       # Firstly, don't try to provide analysis for data where we have less than 5 instances of it
       # Also remove alerts that don't have an incident key, or haven't been resolved yet.
       recover_within = ChronicDuration.parse(opts[:recover_within]).to_i
-      raise "Failed to parse recover within" unless recover_within > 0
+      fail 'Failed to parse recover within' unless recover_within > 0
       data.reject! { |x| x['percentile'].nil? || x['percentile'].to_i > recover_within || x['count'] < opts[:more_than].to_i || x['incident_key'].nil? }
 
       sort_by = case options[:sort_by]
@@ -218,11 +218,11 @@ module Influx
           "#{div} minutes and #{mod} seconds"
         end
         {
-          :incident_key => d['incident_key'],
-          :count => d['count'],
-          :fixed => (d['count'] * opts[:percentage].to_i / 100).floor,
-          :threshold => threshold,
-          :formatted_threshold => formatted_threshold
+          incident_key: d['incident_key'],
+          count: d['count'],
+          fixed: (d['count'] * opts[:percentage].to_i / 100).floor,
+          threshold: threshold,
+          formatted_threshold: formatted_threshold
         }
       end
     end
@@ -230,8 +230,8 @@ module Influx
     def save_categories(opts)
       return if opts[:data].empty?
       timeseries = @config['series']
-      oldest =  Chronic.parse(opts[:start_date], :guess => false).first.to_i
-      newest =  Chronic.parse(opts[:end_date], :guess => false).last.to_i
+      oldest =  Chronic.parse(opts[:start_date], guess: false).first.to_i
+      newest =  Chronic.parse(opts[:end_date], guess: false).last.to_i
       begin
         entries = @influxdb.query "select * from #{timeseries} where time > #{oldest}s and time < #{newest}s"
         entries = entries.empty? ? [] : entries[timeseries]
@@ -243,7 +243,7 @@ module Influx
         end
       end
       opts[:data].each do |incident, category|
-        current_point = entries.select { |x| x['id'] == incident }.first
+        current_point = entries.find { |x| x['id'] == incident }
         current_point['category'] = category
         @influxdb.write_point(timeseries, current_point)
       end
