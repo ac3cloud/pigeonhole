@@ -13,7 +13,7 @@ Pigeonhole requires the following:
 
 After these have been installed, copy the config.toml.example file to config.toml, and update it with your details.
 
-Pigeonhole operates as a ro user with the exception of the categorisation. If you're using the categorisation feature you'll have to add a rw user as well.
+Pigeonhole operates as a read-only user with the exception of the categorisation. If you're using the categorisation feature you'll have to add a read-write user as well.
 
 To setup the two users, the following commands can be invoked (works for InfluxDB 0.8.8): 
 
