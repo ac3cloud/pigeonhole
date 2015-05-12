@@ -6,9 +6,9 @@
   username = "pigeonhole"
   password = "mypassword"
 
-  # Read only user will be used for selects, if supplied
-  username_ro = "pigeonhole_ro"
-  password_ro = "my readonly password"
+  # Special read-write user for data alteration
+  username_rw = "pigeonhole_rw"
+  password_rw = "verysecurepassword"
 
 [pagerduty]
   # Auth token can be given with or without the preceding 'Token token='

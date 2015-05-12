@@ -18,12 +18,12 @@ module Influx
         :port           => @config['port'],
         :time_precision => 's'
       }
-      credentials_ro = {
-        :username       => @config['username_ro'],
-        :password       => @config['password_ro']
+      credentials_rw = {
+        :username       => @config['username_rw'],
+        :password       => @config['password_rw']
       }
       @influxdb = InfluxDB::Client.new(database, credentials)
-      @influxdb_ro = InfluxDB::Client.new(database, credentials.merge(credentials_ro))
+      @influxdb_rw = InfluxDB::Client.new(database, credentials.merge(credentials_rw))
       # FIXME: @influx.stopped? always returns nil in the 0.8 series
       fail("could not connect to influxdb") if @influxdb.stopped?
     end
@@ -34,7 +34,7 @@ module Influx
       oldest = incidents.map { |x| Time.parse(x[:created_on]).to_i }.min - 1
       newest = incidents.map { |x| Time.parse(x[:created_on]).to_i }.max + 1
       begin
-        entries = @influxdb_ro.query "select id, time_to_resolve from #{timeseries} where time > #{oldest}s and time < #{newest}s"
+        entries = @influxdb.query "select id, time_to_resolve from #{timeseries} where time > #{oldest}s and time < #{newest}s"
         entries = entries.empty? ? [] : entries[timeseries]
       rescue InfluxDB::Error => e
         if e.message.match(/^Couldn't find series/)
@@ -63,7 +63,7 @@ module Influx
           end
         end
         incident.delete(:created_on)
-        @influxdb.write_point(timeseries, incident)
+        @influxdb_rw.write_point(timeseries, incident)
       end
     end
 
@@ -84,7 +84,7 @@ module Influx
       influx_query = "#{query_select} from #{timeseries} \
                       where time > #{start_date}s and time < #{end_date}s "
       influx_query << query_input[:conditions] if query_input && query_input[:conditions]
-      incidents = @influxdb_ro.query(influx_query)
+      incidents = @influxdb.query(influx_query)
       incidents[timeseries] ? incidents[timeseries] : []
     end
 
@@ -238,7 +238,7 @@ module Influx
       oldest =  Chronic.parse(opts[:start_date], :guess => false).first.to_i
       newest =  Chronic.parse(opts[:end_date], :guess => false).last.to_i
       begin
-        entries = @influxdb_ro.query "select * from #{timeseries} where time > #{oldest}s and time < #{newest}s"
+        entries = @influxdb.query "select * from #{timeseries} where time > #{oldest}s and time < #{newest}s"
         entries = entries.empty? ? [] : entries[timeseries]
       rescue InfluxDB::Error => e
         if e.message.match(/^Couldn't find series/)
@@ -250,7 +250,7 @@ module Influx
       opts[:data].each do |incident, category|
         current_point = entries.select { |x| x['id'] == incident }.first
         current_point['category'] = category
-        @influxdb.write_point(timeseries, current_point)
+        @influxdb_rw.write_point(timeseries, current_point)
       end
     end
   end

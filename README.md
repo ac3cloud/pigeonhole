@@ -13,9 +13,7 @@ Pigeonhole requires the following:
 
 After these have been installed, copy the config.toml.example file to config.toml, and update it with your details.
 
-### Limiting user access
-
-The configuration of this application allows you to have a read-only user account to compliment a read-write user account. By default, pigeonhole only requires one read/write account, but you can specify a read-only user account that will be used when querying data. 
+Pigeonhole operates as a ro user with the exception of the categorisation. If you're using the categorisation feature you'll have to add a rw user as well.
 
 To setup the two users, the following commands can be invoked (works for InfluxDB 0.8.8): 
 
@@ -25,12 +23,12 @@ USER=root
 PASS=root
 AUTH="u=$USER&p=$PASS"
 
-# Create a user that can do anything
+# Create a read-only user
 curl -X POST "$INFLUX/db/pigeonhole/users?$AUTH" -d '{"name": "pigeonhole",    "password": "pigeonhole__password"}'
+curl -X POST "$INFLUX/db/pigeonhole/users/pigeonhole?$AUTH" -d '{ "readFrom": ".*",  "writeTo": "^$"}'
 
-# Create a user, then restrict it to read-only.
-curl -X POST "$INFLUX/db/pigeonhole/users?$AUTH" -d '{"name": "pigeonhole_ro", "password": "pigeonhole_otherpass"}'
-curl -X POST "$INFLUX/db/pigeonhole/users/pigeonhole_ro?$AUTH" -d '{ "readFrom": ".*",  "writeTo": "^$"}'
+# Create a user that can read and write, for categorisation and data importing
+curl -X POST "$INFLUX/db/pigeonhole/users?$AUTH" -d '{"name": "pigeonhole_rw", "password": "pigeonhole_otherpass"}'
 
 # check the listing
 curl "$INFLUX/db/pigeonhole/users?$AUTH"
