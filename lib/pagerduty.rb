@@ -6,7 +6,7 @@ require 'parallel'
 class Pagerduty
   def initialize
     @config = TOML.load_file('config.toml')['pagerduty']
-    fail 'Could not load credentials file at config.toml' if @config.nil? || @config.empty?
+    raise "Could not load credentials file at config.toml" if @config.nil? || @config.empty?
     @config['auth_token'] = "Token token=#{@config['auth_token']}" unless @config['auth_token'].start_with?('Token token=')
   end
 
@@ -40,18 +40,18 @@ class Pagerduty
   end
 
   def incidents(start_date, finish_date = nil)
-    finish_clause     = finish_date ? finish_clause = "&until=#{finish_date}" : ''
+    finish_clause     = finish_date ? finish_clause = "&until=#{finish_date}" : ""
     time_zone = @config['time_zone']
-    endpoint  = "#{pagerduty_url}/api/v1/incidents?since=#{start_date}#{finish_clause}&time_zone=#{time_zone}"
+    endpoint  = "#{self.pagerduty_url}/api/v1/incidents?since=#{start_date}#{finish_clause}&time_zone=#{time_zone}"
     response  = request(endpoint)
     incidents = response.map do |incident|
       tmp = {
-        id: incident['id'],
-        created_on: incident['created_on'],
-        description: incident['trigger_summary_data']['description'],
-        incident_key: incident['incident_key'],
-        input_type: incident['service']['name'],
-        category: 'not set'
+        :id           => incident['id'],
+        :created_on   => incident['created_on'],
+        :description  => incident['trigger_summary_data']['description'],
+        :incident_key => incident['incident_key'],
+        :input_type   => incident['service']['name'],
+        :category     => 'not set'
       }
       if incident['trigger_summary_data']['description'].nil?
         # some alerts don't have a description (e.g.: website pulse), fall back on subject and service name
@@ -63,24 +63,24 @@ class Pagerduty
   end
 
   def add_ack_resolve(incidents)
-    Parallel.each(incidents, in_threads: 20) do |incident|
+    Parallel.each(incidents, :in_threads => 20) do |incident|
       incident_id      = incident[:id]
-      log              = request("#{pagerduty_url}/api/v1/incidents/#{incident_id}/log_entries").sort_by { |x| x['created_at'] }
-      problem          = log.find { |x| x['type'] == 'trigger' }
+      log              = request("#{self.pagerduty_url}/api/v1/incidents/#{incident_id}/log_entries").sort_by { |x| x['created_at'] }
+      problem          = log.select { |x| x['type'] == 'trigger' }.first
       problem_time     = Time.parse(problem['created_at'])
       acknowledge_by   = nil
       time_to_ack      = nil
       time_to_resolve  = nil
 
       if log.any? { |x| x['type'] == 'acknowledge' }
-        acknowledge      = log.find { |x| x['type'] == 'acknowledge' }
+        acknowledge      = log.select { |x| x['type'] == 'acknowledge' }.first
         acknowledge_by   = acknowledge['agent']['email']
         acknowledge_time = Time.parse(acknowledge['created_at'])
         time_to_ack      = acknowledge_time - problem_time
       end
 
       if log.any? { |x| x['type'] == 'resolve' }
-        resolve         = log.find { |x| x['type'] == 'resolve' }
+        resolve         = log.select { |x| x['type'] == 'resolve' }.first
         resolve_time    = Time.parse(resolve['created_at'])
         time_to_resolve = resolve_time - problem_time
       end
@@ -110,7 +110,7 @@ class Pagerduty
     until_date = Time.parse("#{until_date.strftime('%F')} 09:30:00") # 09:30h end
     oncall = {}
     schedules.each do |name, schedule|
-      endpoint = "#{pagerduty_url}/schedules/#{schedule}/users?since=#{since_date.iso8601}&until=#{until_date.iso8601}"
+      endpoint = "#{self.pagerduty_url}/schedules/#{schedule}/users?since=#{since_date.iso8601}&until=#{until_date.iso8601}"
       response = request(endpoint)
       response['users'].each do |user|
         oncall[name.to_sym] ||= []
