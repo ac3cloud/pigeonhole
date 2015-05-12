@@ -38,7 +38,6 @@ end
 
 def search_precondition
   return "" unless @search
-  @search = URI.escape(@search)
   "and incident_key =~ /.*#{@search}.*/i"
 end
 
