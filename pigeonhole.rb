@@ -38,8 +38,7 @@ end
 
 def search_precondition
   return "" unless @search
-  @search = URI.escape(@search)
-  "and incident_key =~ /.*#{@search}.*/i"
+  "and incident_key =~ /.*#{URI.escape(@search)}.*/i"
 end
 
 get '/:start_date/:end_date' do
