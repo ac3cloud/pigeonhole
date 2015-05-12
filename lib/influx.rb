@@ -23,13 +23,16 @@ module Influx
         :password       => @config['password_rw']
       }
       @influxdb = InfluxDB::Client.new(database, credentials)
-      @influxdb_rw = InfluxDB::Client.new(database, credentials.merge(credentials_rw))
+      if credentials_rw[:username] && credentials_rw[:password]
+        @influxdb_rw = InfluxDB::Client.new(database, credentials.merge(credentials_rw)) 
+      end
       # FIXME: @influx.stopped? always returns nil in the 0.8 series
       fail("could not connect to influxdb") if @influxdb.stopped?
     end
 
     def insert_incidents(incidents)
       return if incidents.empty?
+      fail("no read-write user defined, cannot insert records") unless @influxdb_rw
       timeseries = @config['series']
       oldest = incidents.map { |x| Time.parse(x[:created_on]).to_i }.min - 1
       newest = incidents.map { |x| Time.parse(x[:created_on]).to_i }.max + 1
@@ -234,6 +237,7 @@ module Influx
 
     def save_categories(opts)
       return if opts[:data].empty?
+      fail("no read-write user defined, cannot save categories") unless @influxdb_rw
       timeseries = @config['series']
       oldest =  Chronic.parse(opts[:start_date], :guess => false).first.to_i
       newest =  Chronic.parse(opts[:end_date], :guess => false).last.to_i
