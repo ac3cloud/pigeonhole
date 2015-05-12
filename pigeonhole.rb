@@ -99,7 +99,8 @@ get '/noise-candidates/:start_date/:end_date' do
 end
 
 post '/:start_date/:end_date' do
-  uri = "#{params["start_date"]}/#{params["end_date"]}?search=#{params["search"]}"
+  uri = "#{params["start_date"]}/#{params["end_date"]}"
+  uri += "?search=#{params["search"]}" if params["search"]
   opts = {
     :start_date => params[:start_date],
     :end_date   => params[:end_date],
