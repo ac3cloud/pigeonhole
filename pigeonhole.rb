@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-$:.push(File.expand_path(File.join(__FILE__, '..', 'lib')))
+$LOAD_PATH.push(File.expand_path(File.join(__FILE__, '..', 'lib')))
 
 require 'sinatra'
 require 'influx'
@@ -17,27 +17,27 @@ influxdb = Influx::Db.new
 pagerduty = Pagerduty.new
 
 get '/' do
-  today = Time.now.strftime("%Y-%m-%d")
+  today = Time.now.strftime('%Y-%m-%d')
   redirect "/#{today}/#{today}"
 end
 
 get '/alert-frequency/?' do
-  today = Time.now.strftime("%Y-%m-%d")
+  today = Time.now.strftime('%Y-%m-%d')
   redirect "/alert-frequency/#{today}/#{today}"
 end
 
 get '/alert-response/?' do
-  today = Time.now.strftime("%Y-%m-%d")
+  today = Time.now.strftime('%Y-%m-%d')
   redirect "/alert-response/#{today}/#{today}"
 end
 
 get '/noise-candidates/?' do
-  today = Time.now.strftime("%Y-%m-%d")
+  today = Time.now.strftime('%Y-%m-%d')
   redirect "/noise-candidates/#{today}/#{today}"
 end
 
 def search_precondition
-  return "" unless @search
+  return '' unless @search
   "and incident_key =~ /.*#{@search}.*/i"
 end
 
@@ -50,18 +50,18 @@ get '/:start_date/:end_date' do
     'needs documentation',
     'unclear, needs discussion'
   ]
-  @start_date = params["start_date"]
-  @end_date   = params["end_date"]
-  @search     = params["search"]
+  @start_date = params['start_date']
+  @end_date   = params['end_date']
+  @search     = params['search']
   @pagerduty_url = pagerduty.pagerduty_url
-  @incidents = influxdb.find_incidents(@start_date, @end_date, {:conditions => search_precondition })
-  haml :"index"
+  @incidents = influxdb.find_incidents(@start_date, @end_date, :conditions => search_precondition)
+  haml :index
 end
 
 get '/alert-frequency/:start_date/:end_date' do
-  @start_date = params["start_date"]
-  @end_date   = params["end_date"]
-  @search     = params["search"]
+  @start_date = params['start_date']
+  @end_date   = params['end_date']
+  @search     = params['search']
   @incidents  = influxdb.incident_frequency(@start_date, @end_date, search_precondition)
   @total      = @incidents.map { |x| x['count'] }.inject(:+)
   @series     = HighCharts.alert_frequency(@incidents)
@@ -69,15 +69,15 @@ get '/alert-frequency/:start_date/:end_date' do
 end
 
 get '/alert-response/:start_date/:end_date' do
-  @start_date = params["start_date"]
-  @end_date   = params["end_date"]
-  @search     = params["search"]
+  @start_date = params['start_date']
+  @end_date   = params['end_date']
+  @search     = params['search']
   resp = influxdb.alert_response(@start_date, @end_date, search_precondition)
   @series     = HighCharts.alert_response(resp)
   # Build table data
   @incidents  = resp[:incidents] || []
   @total      = @incidents.count
-  @acked      = @incidents.reject { |x| x['ack_by'].nil? }.count
+  @acked      = @incidents.count { |x| !x['ack_by'].nil? }
   @pagerduty_url = pagerduty.pagerduty_url
   @incidents.each do |incident|
     incident['entity'], incident['check'] = incident['incident_key'].split(':', 2)
@@ -89,27 +89,27 @@ get '/alert-response/:start_date/:end_date' do
 end
 
 get '/noise-candidates/:start_date/:end_date' do
-  @start_date = params["start_date"]
-  @end_date   = params["end_date"]
-  @search     = params["search"]
+  @start_date = params['start_date']
+  @end_date   = params['end_date']
+  @search     = params['search']
   @incidents  = influxdb.noise_candidates(@start_date, @end_date, search_precondition)
   @total      = @incidents.count
   haml :"noise-candidates"
 end
 
 post '/:start_date/:end_date' do
-  uri = "#{params["start_date"]}/#{params["end_date"]}"
-  uri += "?search=#{params["search"]}" if params["search"]
+  uri = "#{params['start_date']}/#{params['end_date']}"
+  uri += "?search=#{params['search']}" if params['search']
   opts = {
     :start_date => params[:start_date],
     :end_date   => params[:end_date],
     :search     => params[:search]
   }
-  params.delete("start_date")
-  params.delete("end_date")
-  params.delete("search")
-  params.delete("splat")
-  params.delete("captures")
+  params.delete('start_date')
+  params.delete('end_date')
+  params.delete('search')
+  params.delete('splat')
+  params.delete('captures')
 
   opts[:data] = params
   influxdb.save_categories(opts)
