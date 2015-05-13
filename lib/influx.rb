@@ -136,15 +136,15 @@ module Influx
       # Over one year: one point per day
       first, last = results.minmax_by { |x| x['alert_time'] }.map { |x| x['alert_time'] }
       group_by = case
-      when (last - first) < 1.week
-        nil
-      when (last - first).between?(1.week, 4.weeks)
-        '1h'
-      when (last - first) < 52.weeks
-        '8h'
-      else
-        '24h'
-      end
+                 when (last - first) < 1.week
+                   nil
+                 when (last - first).between?(1.week, 4.weeks)
+                   '1h'
+                 when (last - first) < 52.weeks
+                   '8h'
+                 else
+                   '24h'
+                   end
 
       unless group_by.nil?
         aggregated = find_incidents(start_date, end_date,
@@ -200,31 +200,34 @@ module Influx
       # Also remove alerts that don't have an incident key, or haven't been resolved yet.
       recover_within = ChronicDuration.parse(opts[:recover_within]).to_i
       raise 'Failed to parse recover within' unless recover_within > 0
-      data.reject! { |x| x['percentile'].nil? || x['percentile'].to_i > recover_within || x['count'] < opts[:more_than].to_i || x['incident_key'].nil? }
+      data.reject! do |x|
+        x['percentile'].nil? ||
+          x['percentile'].to_i > recover_within || x['count'] < opts[:more_than].to_i || x['incident_key'].nil?
+      end
 
       sort_by = case options[:sort_by]
-      when 'frequency'
-        'count'
-      when 'threshold'
-        'percentile'
-      else
-        opts[:sort_by]
-      end
+                when 'frequency'
+                  'count'
+                when 'threshold'
+                  'percentile'
+                else
+                  opts[:sort_by]
+               end
       data = data.sort_by { |x| x[sort_by] }
       data.reverse! if sort_by == 'frequency'
 
       data.map do |d|
         threshold = d['percentile'] + 5
         formatted_threshold = case
-        when threshold < 60
-          "#{threshold} seconds"
-        when threshold < 120
-          div, mod = threshold.divmod(60)
-          "#{div} minute and #{mod} seconds"
-        else
-          div, mod = threshold.divmod(60)
-          "#{div} minutes and #{mod} seconds"
-        end
+                              when threshold < 60
+                                "#{threshold} seconds"
+                              when threshold < 120
+                                div, mod = threshold.divmod(60)
+                                "#{div} minute and #{mod} seconds"
+                              else
+                                div, mod = threshold.divmod(60)
+                                "#{div} minutes and #{mod} seconds"
+                              end
         {
           :incident_key => d['incident_key'],
           :count => d['count'],
