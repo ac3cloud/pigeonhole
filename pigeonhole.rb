@@ -16,23 +16,23 @@ include Methadone::CLILogging
 influxdb = Influx::Db.new
 pagerduty = Pagerduty.new
 
+def today
+  Time.now.strftime("%Y-%m-%d") 
+end
+
 get '/' do
-  today = Time.now.strftime("%Y-%m-%d")
   redirect "/#{today}/#{today}"
 end
 
 get '/alert-frequency/?' do
-  today = Time.now.strftime("%Y-%m-%d")
   redirect "/alert-frequency/#{today}/#{today}"
 end
 
 get '/alert-response/?' do
-  today = Time.now.strftime("%Y-%m-%d")
   redirect "/alert-response/#{today}/#{today}"
 end
 
 get '/noise-candidates/?' do
-  today = Time.now.strftime("%Y-%m-%d")
   redirect "/noise-candidates/#{today}/#{today}"
 end
 
