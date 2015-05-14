@@ -21,8 +21,8 @@ end
 
 get '/' do
   @mapper = { 'ack' => 'Acknowleged',
- 'resolve' => 'Resolved', 
- 'stddev' => 'σ', 
+ 'resolve' => 'Resolved',
+ 'stddev' => 'σ',
  '95_percentile' => '95%',
  'mean' => 'x̄' }
 
@@ -30,9 +30,12 @@ get '/' do
   @stats = ["mean","stddev","95_percentile"]
 
   @daily_stats, @breakdown_by_time = influxdb.generate_daily_stats
+  require 'pp'
+  pp @daily_stats
+  pp @breakdown_by_time
   @unacked, @unresolved = influxdb.unaddressed_alerts
-  @unacked ||= [] 
-  @unresolved ||= [] 
+  @unacked ||= []
+  @unresolved ||= []
   haml :"index"
 end
 
@@ -127,7 +130,7 @@ post '/pagerduty' do
     influxdb.insert_incidents(incidents)
     status 200
     "Inserted incidents: #{incident_ids.join(', ')}"
-  rescue RuntimeError => e
+  rescue => e
     status 500
     {
       :error => e.class,

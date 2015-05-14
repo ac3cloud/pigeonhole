@@ -64,8 +64,8 @@ module Influx
 
     def find_incidents(start_date = nil, end_date = nil, query_input = nil)
       timeseries = @config['series']
-      start_date = Chronic.parse(start_date, :guess => false).first unless start_date.nil?
-      end_date = Chronic.parse(end_date, :guess => false).last unless end_date.nil?
+      start_date = Chronic.parse(start_date, :guess => false).first unless start_date.nil? || start_date.is_a?(Time)
+      end_date = Chronic.parse(end_date, :guess => false).last unless end_date.nil? || end_date.is_a?(Time)
 
       # If we couldn't parse the given date, use the last 24 hours.
       end_date = (end_date.nil? || end_date.to_i > Time.now.to_i) ? Time.now.to_i : end_date.to_i
@@ -252,7 +252,7 @@ module Influx
             unresolved << member
         end
       }
-      [unacked, unresolved] 
+      [unacked, unresolved]
     end
 
     def generate_daily_stats
@@ -265,34 +265,37 @@ module Influx
       daily_stats['ack_percent_in_60s'] = ack_percent_before_timeout(:timeout => 60) || 0
       daily_stats["title"] = "Last 24 hours"
 
-      breakdown_by_time = []
-      # Sydney midnight is 14:00 UTC (previous day)
-      # Sydney 8am is 22:00 UTC (previous day)
-      # Sydney 4pm is 06:00 UTC
+      shifts = TOML.load_file('config.toml')['shifts']
+      time_zone = shifts['time_zone']
+      shifts.delete('time_zone')
 
-      # Here, we aim to pull down data for the last 3 full shifts (ie, the last 24 hours), plus the partial shift currently running
-      shift_names = { 14 => "Third Shift", 22 => "First Shift", 06 => "Second Shift" }
-      shift_times = shift_names.keys.map { |x|
-        [
-          Chronic.parse("#{Date.today.strftime('%F')} #{x}:00:00 utc"),
-          Chronic.parse("#{Date.today.prev_day.strftime('%F')} #{x}:00:00 utc")
-        ]
-      }.flatten
-      shift_times.reject! { |x| x.to_i > Time.now.to_i }
-      shift_times = shift_times.push(Time.now.utc).sort.reverse[0..(shift_names.length + 1)]
+      shift_times = shifts.each do |_, shift|
+        start_time = shift['start_time']
+        duration = shift['duration'].to_i
+        # To get over 24 hours of data, we pick up all of yesterday's shifts, plus any of today's that don't start in the future.
+        days = if Time.parse("#{start_time} #{time_zone}").to_i + duration > Time.now.utc.to_i
+          # This shift starts in the future, only use yesterday's shift
+          [ Date.today.prev_day.strftime('%F') ]
+        else
+          [ Date.today.prev_day.strftime('%F'), Date.today.strftime('%F') ]
+        end
 
-      shift_times.each_with_index { |time, index|
-        break if index + 1 == shift_times.length
-        start_date, finish_date = shift_times[index+1].to_s, time.to_s
-        x = find_incidents(start_date, finish_date, :query_select => aggregate_select_str).first || {}
-        x['ack_percent_in_60s'] = ack_percent_before_timeout(:start_date => start_date, :finish_date => finish_date, :timeout => 60)
-        x['start_date'] = start_date
-        x['finish_date'] = finish_date
-        x['title'] = shift_names[shift_times[index+1].hour]
-        breakdown_by_time << x
-      }
+        days.each do |day|
+          start_date = Chronic.parse("#{day} #{start_time}:00 #{time_zone}")
+          end_date = start_date + duration * 60
 
-      [ daily_stats, breakdown_by_time ]
+          aggregated = find_incidents(start_date, end_date, :query_select => aggregate_select_str).first || {}
+          ack_percent_in_60s = ack_percent_before_timeout(:start_date => start_date, :end_date => end_date, :timeout => 60)
+          shift[start_date.to_s] = {
+            :start_date  => start_date.to_s,
+            :end_date => end_date.to_s,
+            :aggregated  => aggregated,
+            :ack_percent_in_60s => ack_percent_in_60s
+          }
+        end
+      end
+
+      [ daily_stats, shifts ]
     end
 
     def ack_percent_before_timeout(opts)

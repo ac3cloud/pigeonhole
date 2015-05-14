@@ -6,13 +6,13 @@
 
 %div{:class => "shifts"}
   %h2 Breakdown by shift
- 
+
   - @breakdown_by_time.each do |b|
     = haml :'_stats_table', :locals => { :stats => b }
 
 %h3 Outstanding alerts:
 
-- if @unacked.length > 0 
+- if @unacked.length > 0
   %h4 The following alerts currently have not been acknowledged:
   = haml :'_incident_table', :locals => { :incidents => @unacked }
 
@@ -22,4 +22,4 @@
 
 
 - if @unacked.length == 0 && @unresolved.length == 0
-  No outstanding alerts. Everything is hunky-dory. 
+  No outstanding alerts. Everything is hunky-dory.
