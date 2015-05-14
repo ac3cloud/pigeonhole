@@ -18,13 +18,21 @@ module Influx
         :port           => @config['port'],
         :time_precision => 's'
       }
+      credentials_rw = {
+        :username       => @config['username_rw'],
+        :password       => @config['password_rw']
+      }
       @influxdb = InfluxDB::Client.new(database, credentials)
+      if credentials_rw[:username] && credentials_rw[:password]
+        @influxdb_rw = InfluxDB::Client.new(database, credentials.merge(credentials_rw)) 
+      end
       # FIXME: @influx.stopped? always returns nil in the 0.8 series
       fail("could not connect to influxdb") if @influxdb.stopped?
     end
 
     def insert_incidents(incidents)
       return if incidents.empty?
+      fail("no read-write user defined, cannot insert records") unless @influxdb_rw
       timeseries = @config['series']
       oldest = incidents.map { |x| Time.parse(x[:created_on]).to_i }.min - 1
       newest = incidents.map { |x| Time.parse(x[:created_on]).to_i }.max + 1
@@ -33,7 +41,7 @@ module Influx
         entries = entries.empty? ? [] : entries[timeseries]
       rescue InfluxDB::Error => e
         if e.message.match(/^Couldn't find series/)
-          existing = []
+          entries = []
         else
           raise
         end
@@ -58,7 +66,7 @@ module Influx
           end
         end
         incident.delete(:created_on)
-        @influxdb.write_point(timeseries, incident)
+        @influxdb_rw.write_point(timeseries, incident)
       end
     end
 
@@ -83,10 +91,10 @@ module Influx
       incidents[timeseries] ? incidents[timeseries] : []
     end
 
-    def incident_frequency(start_date = nil, end_date = nil)
+    def incident_frequency(start_date = nil, end_date = nil, precondition = "")
       query_input = {
         :query_select => "select count(incident_key), incident_key",
-        :conditions => "group by incident_key"
+        :conditions => "#{precondition} group by incident_key"
       }
       incidents = find_incidents(start_date, end_date, query_input).sort_by { |k| k["count"] }.reverse
       return [] if incidents.empty?
@@ -101,8 +109,8 @@ module Influx
       }.compact
     end
 
-    def alert_response(start_date = nil, end_date = nil)
-      incidents = find_incidents(start_date, end_date)
+    def alert_response(start_date = nil, end_date = nil, precondition = "")
+      incidents = find_incidents(start_date, end_date, :conditions => precondition )
       return {} if incidents.empty?
       results = incidents.map { |incident|
         next if incident['incident_key'].nil?
@@ -141,7 +149,7 @@ module Influx
       unless group_by.nil?
         aggregated = find_incidents(start_date, end_date,
                                     :query_select => "select mean(time_to_ack) as mean_ack, mean(time_to_resolve) as mean_resolve",
-                                    :conditions => "group by time(#{group_by})"
+                                    :conditions => "#{precondition} group by time(#{group_by})"
                     )
         aggregated.each do |incident|
           incident['mean_ack'] = incident['mean_ack'].nil? ? 0 : (incident['mean_ack'] / 60.0).ceil
@@ -153,7 +161,7 @@ module Influx
       count_group_by = group_by.nil? ? '1h' : group_by
       count = find_incidents(start_date, end_date,
                              :query_select => "select count(incident_key)",
-                             :conditions => "group by time(#{count_group_by}) fill(0)"
+                             :conditions => "#{precondition} group by time(#{count_group_by}) fill(0)"
               ).sort_by { |k| k["count"] }.reverse
 
       {
@@ -164,10 +172,10 @@ module Influx
       }
     end
 
-    def noise_candidates(start_date = nil, end_date = nil)
+    def noise_candidates(start_date = nil, end_date = nil, precondition = "")
       query_input = {
         :query_select => "select count(incident_key), incident_key, mean(time_to_resolve)",
-        :conditions => "and time_to_resolve < 120 group by incident_key"
+        :conditions => "#{precondition} and time_to_resolve < 120 group by incident_key"
       }
       incidents = find_incidents(start_date, end_date, query_input).sort_by { |k| k["count"] }.reverse
       return [] if incidents.empty?
@@ -310,6 +318,7 @@ module Influx
 
     def save_categories(opts)
       return if opts[:data].empty?
+      fail("no read-write user defined, cannot save categories") unless @influxdb_rw
       timeseries = @config['series']
       oldest =  Chronic.parse(opts[:start_date], :guess => false).first.to_i
       newest =  Chronic.parse(opts[:end_date], :guess => false).last.to_i
@@ -326,7 +335,7 @@ module Influx
       opts[:data].each do |incident, category|
         current_point = entries.select { |x| x['id'] == incident }.first
         current_point['category'] = category
-        @influxdb.write_point(timeseries, current_point)
+        @influxdb_rw.write_point(timeseries, current_point)
       end
     end
   end

@@ -29,6 +29,13 @@ form#incidents th#category {
   .container {
     width: 1370px;
   }
+
+  .navbar-form .navform_search {
+    width: 115px
+  }
+  .navbar-form .navform_date {
+    width: 155px
+  }
 }
 
 .home_link, .home_link:link, .home_list:visited, .home_link:hover, .home_link:active {

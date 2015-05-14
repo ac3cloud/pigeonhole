@@ -8,6 +8,9 @@
     = @start_date
     and
     = @end_date
+  - if @search
+    matching term
+    = '"'+@search+'"'
 
 %div{:id => 'ackresolutionchart'}
 
@@ -40,7 +43,7 @@
         %tr
           %td= Time.at(incident['alert_time'])
           %td
-            %a{:href => "https://bltprf.pagerduty.com/incidents/#{incident['id']}"}= incident['id']
+            %a{:href => "#{@pagerduty_url}/incidents/#{incident['id']}"}= incident['id']
           %td= incident['entity']
           %td= incident['check']
           %td= incident['ack_by']
