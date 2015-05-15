@@ -24,7 +24,7 @@ module Influx
       }
       @influxdb = InfluxDB::Client.new(database, credentials)
       if credentials_rw[:username] && credentials_rw[:password]
-        @influxdb_rw = InfluxDB::Client.new(database, credentials.merge(credentials_rw)) 
+        @influxdb_rw = InfluxDB::Client.new(database, credentials.merge(credentials_rw))
       end
       # FIXME: @influx.stopped? always returns nil in the 0.8 series
       fail("could not connect to influxdb") if @influxdb.stopped?
@@ -112,20 +112,19 @@ module Influx
     def alert_response(start_date = nil, end_date = nil, precondition = "")
       incidents = find_incidents(start_date, end_date, :conditions => precondition )
       return {} if incidents.empty?
-      results = incidents.map { |incident|
+      results = incidents.map do |incident|
         next if incident['incident_key'].nil?
         time_to_ack = incident['time_to_ack'].nil? ? 0 : (incident['time_to_ack'] / 60.0).ceil
         time_to_resolve = incident['time_to_resolve'].nil? ? 0 : (incident['time_to_resolve'] / 60.0).ceil
-        ack_by = incident['acknowledge_by']
         {
-          'id' => incident['id'],
-          'alert_time' => incident['time'],
-          'incident_key' => incident['incident_key'].to_s.strip,
-          'ack_by' => ack_by,
-          'time_to_ack' => time_to_ack,
+          'id'              => incident['id'],
+          'alert_time'      => incident['time'],
+          'incident_key'    => incident['incident_key'].to_s.strip,
+          'ack_by'          => incident['acknowledge_by'],
+          'time_to_ack'     => time_to_ack,
           'time_to_resolve' => time_to_resolve
         }
-      }.compact
+      end.compact
 
       # The rest of this function is to make the graph work:
       # Only a certain number of points are meaningful.
@@ -149,7 +148,7 @@ module Influx
       unless group_by.nil?
         aggregated = find_incidents(start_date, end_date,
                                     :query_select => "select mean(time_to_ack) as mean_ack, mean(time_to_resolve) as mean_resolve",
-                                    :conditions => "#{precondition} group by time(#{group_by})"
+                                    :conditions => "group by time(#{group_by}) #{precondition}"
                     )
         aggregated.each do |incident|
           incident['mean_ack'] = incident['mean_ack'].nil? ? 0 : (incident['mean_ack'] / 60.0).ceil
@@ -161,7 +160,7 @@ module Influx
       count_group_by = group_by.nil? ? '1h' : group_by
       count = find_incidents(start_date, end_date,
                              :query_select => "select count(incident_key)",
-                             :conditions => "#{precondition} group by time(#{count_group_by}) fill(0)"
+                             :conditions => "group by time(#{count_group_by}), fill(0) #{precondition}"
               ).sort_by { |k| k["count"] }.reverse
 
       {
