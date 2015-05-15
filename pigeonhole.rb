@@ -17,7 +17,7 @@ influxdb = Influx::Db.new
 pagerduty = Pagerduty.new
 
 def today
-  Time.now.strftime("%Y-%m-%d") 
+  Time.now.strftime('%Y-%m-%d')
 end
 
 get '/' do
