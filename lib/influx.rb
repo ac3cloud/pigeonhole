@@ -271,7 +271,7 @@ module Influx
 
       daily_stats = find_incidents(nil, nil, :query_select => aggregate_select_str).first || {}
       daily_stats['ack_percent_in_60s'] = ack_percent_before_timeout(:timeout => 60) || 0
-      daily_stats["title"] = "Last 24 hours"
+      daily_stats["name"] = "Last 24 hours"
 
       shifts = TOML.load_file('config.toml')['shifts']
       time_zone = shifts['time_zone']
@@ -294,11 +294,11 @@ module Influx
 
           aggregated = find_incidents(start_date, end_date, :query_select => aggregate_select_str).first || {}
           ack_percent_in_60s = ack_percent_before_timeout(:start_date => start_date, :end_date => end_date, :timeout => 60)
-          shift[start_date.to_s] = {
+          aggregated["ack_percent_in_60s"] = ack_percent_in_60s
+          shift['data'] = {
             :start_date  => start_date.to_s,
             :end_date => end_date.to_s,
             :aggregated  => aggregated,
-            :ack_percent_in_60s => ack_percent_in_60s
           }
         end
       end

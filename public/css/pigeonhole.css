@@ -68,7 +68,7 @@ form#incidents th#category {
 } 
 
 .stats_table .incidents { 
-  display: inline-block;
+  display: block;
 }
 
 .stats_table td { 
