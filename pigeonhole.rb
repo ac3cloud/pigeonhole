@@ -129,6 +129,7 @@ post '/pagerduty' do
   rescue RuntimeError => e
     status 500
     {
+      :data  => data,
       :error => e.class,
       :message => e.message
     }.to_json

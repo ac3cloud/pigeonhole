@@ -122,6 +122,8 @@ class Pagerduty
 
   def incidents_from_webhook(data)
     earliest = data['messages'].min { |x, y| x['data']['incident']['created_on'] <=> y['data']['incident']['created_on'] }
+    return if earliest.empty?
+    earliest = earliest['data']['incident']['created_on']
     incidents(earliest)
   end
 end
