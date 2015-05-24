@@ -101,6 +101,9 @@ module Influx
       incidents.map { |incident|
         next if incident['incident_key'].nil?
         entity, check = incident['incident_key'].split(':', 2)
+        if check == ''
+          entity, check = entity.split('/')
+        end
         {
           'count'  => incident['count'],
           'entity' => entity,
@@ -181,6 +184,9 @@ module Influx
       incidents.map { |incident|
         next if incident['incident_key'].nil?
         entity, check = incident['incident_key'].split(':', 2)
+        if check == ''
+          entity, check = entity.split('/')
+        end
         {
           'count'  => incident['count'],
           'entity' => entity,
