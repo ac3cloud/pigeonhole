@@ -24,6 +24,8 @@
       %tr
         %th#count
           Count
+        %th#source
+          Source
         %th#entity
           Entity
         %th#check
@@ -32,6 +34,7 @@
       - @incidents.each do |incident|
         %tr
           %td= incident['count']
+          %td= incident['input_type']
           %td= incident['entity']
           %td= incident['check']
 

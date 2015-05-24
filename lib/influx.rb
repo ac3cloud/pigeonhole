@@ -101,13 +101,14 @@ module Influx
       incidents.map { |incident|
         next if incident['incident_key'].nil?
         entity, check = incident['incident_key'].split(':', 2)
-        if check == ''
+        if !check
           entity, check = entity.split('/')
         end
         {
-          'count'  => incident['count'],
-          'entity' => entity,
-          'check'  => check
+          'count'       => incident['count'],
+          'entity'      => entity,
+          'check'       => check,
+          'input_type'  => incident['input_type']
         }
       }.compact
     end
@@ -125,7 +126,8 @@ module Influx
           'incident_key'    => incident['incident_key'].to_s.strip,
           'ack_by'          => incident['acknowledge_by'],
           'time_to_ack'     => time_to_ack,
-          'time_to_resolve' => time_to_resolve
+          'time_to_resolve' => time_to_resolve,
+          'input_type'      => incident['input_type']
         }
       end.compact
 
@@ -184,14 +186,15 @@ module Influx
       incidents.map { |incident|
         next if incident['incident_key'].nil?
         entity, check = incident['incident_key'].split(':', 2)
-        if check == ''
+        if !check
           entity, check = entity.split('/')
         end
         {
           'count'  => incident['count'],
           'entity' => entity,
           'check'  => check,
-          'mean_time_to_resolve' => incident['mean'].to_i
+          'mean_time_to_resolve' => incident['mean'].to_i,
+          'input_type'      => incident['input_type']
         }
       }.compact
     end
