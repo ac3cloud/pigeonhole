@@ -81,6 +81,9 @@ get '/alert-response/:start_date/:end_date' do
   @pagerduty_url = pagerduty.pagerduty_url
   @incidents.each do |incident|
     incident['entity'], incident['check'] = incident['incident_key'].split(':', 2)
+    if !incident['check']
+      incident['entity'], incident['check'] = incident['entity'].split('/')
+    end
     incident['ack_by'] = 'N/A' if incident['ack_by'].nil?
     incident['time_to_ack'] = 'N/A' if incident['time_to_ack'] == 0
     incident['time_to_resolve'] = 'N/A' if incident['time_to_resolve'] == 0
