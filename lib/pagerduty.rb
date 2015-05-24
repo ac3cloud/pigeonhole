@@ -27,7 +27,7 @@ class Pagerduty
         endpoint,
         headers: {
           'Content-Type'  => 'application/json',
-          'Authorization' => "Token token=#{@config['auth_token']}"
+          'Authorization' => @config['auth_token']
         }
       )
       response = JSON.parse(response.body).values.first
