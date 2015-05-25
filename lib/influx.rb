@@ -93,8 +93,8 @@ module Influx
 
     def incident_frequency(start_date = nil, end_date = nil, precondition = "")
       query_input = {
-        :query_select => "select count(incident_key), incident_key",
-        :conditions => "#{precondition} group by incident_key"
+        :query_select => "select count(incident_key), incident_key, input_type",
+        :conditions => "#{precondition} group by incident_key, input_type"
       }
       incidents = find_incidents(start_date, end_date, query_input).sort_by { |k| k["count"] }.reverse
       return [] if incidents.empty?
@@ -102,7 +102,14 @@ module Influx
         next if incident['incident_key'].nil?
         entity, check = incident['incident_key'].split(':', 2)
         if !check
-          entity, check = entity.split('/')
+          if incident['input_type'].downcase.include? "sensu"
+            entity, check = entity.split('/')
+          elsif incident['input_type'].downcase.include? "nagios"
+            # The last string is the check name in Nagios checks
+            partitioned_elements = entity.rpartition(' ')
+            entity = "#{partitioned_elements[2]}"
+            check = partitioned_elements.last
+          end
         end
         {
           'count'       => incident['count'],
@@ -152,8 +159,8 @@ module Influx
 
       unless group_by.nil?
         aggregated = find_incidents(start_date, end_date,
-                                    :query_select => "select mean(time_to_ack) as mean_ack, mean(time_to_resolve) as mean_resolve",
-                                    :conditions => "group by time(#{group_by}) #{precondition}"
+                                    :query_select => "select mean(time_to_ack) as mean_ack, mean(time_to_resolve) as mean_resolve, input_type",
+                                    :conditions => "group by time(#{group_by}), input_type #{precondition}"
                     )
         aggregated.each do |incident|
           incident['mean_ack'] = incident['mean_ack'].nil? ? 0 : (incident['mean_ack'] / 60.0).ceil
@@ -165,7 +172,7 @@ module Influx
       count_group_by = group_by.nil? ? '1h' : group_by
       count = find_incidents(start_date, end_date,
                              :query_select => "select count(incident_key)",
-                             :conditions => "group by time(#{count_group_by}), fill(0) #{precondition}"
+                             :conditions => "group by time(#{count_group_by}), fill(0), input_type #{precondition}"
               ).sort_by { |k| k["count"] }.reverse
 
       {
@@ -178,8 +185,8 @@ module Influx
 
     def noise_candidates(start_date = nil, end_date = nil, precondition = "")
       query_input = {
-        :query_select => "select count(incident_key), incident_key, mean(time_to_resolve)",
-        :conditions => "#{precondition} and time_to_resolve < 120 group by incident_key"
+        :query_select => "select count(incident_key), incident_key, mean(time_to_resolve), input_type",
+        :conditions => "#{precondition} and time_to_resolve < 120 group by incident_key, input_type"
       }
       incidents = find_incidents(start_date, end_date, query_input).sort_by { |k| k["count"] }.reverse
       return [] if incidents.empty?
@@ -187,22 +194,29 @@ module Influx
         next if incident['incident_key'].nil?
         entity, check = incident['incident_key'].split(':', 2)
         if !check
-          entity, check = entity.split('/')
+          if incident['input_type'].downcase.include? "sensu"
+            entity, check = entity.split('/')
+          elsif incident['input_type'].downcase.include? "nagios"
+            # The last string is the check name in Nagios checks
+            partitioned_elements = entity.rpartition(' ')
+            entity = "#{partitioned_elements[2]}"
+            check = partitioned_elements.last
+          end
         end
         {
-          'count'  => incident['count'],
-          'entity' => entity,
-          'check'  => check,
-          'mean_time_to_resolve' => incident['mean'].to_i,
-          'input_type'      => incident['input_type']
+          'count'                 => incident['count'],
+          'entity'                => entity,
+          'check'                 => check,
+          'mean_time_to_resolve'  => incident['mean'].to_i,
+          'input_type'            => incident['input_type']
         }
       }.compact
     end
 
     def threshold_recommendations(opts)
       data = find_incidents(opts[:start_date], opts[:end_date],
-                            :query_select => "select count(incident_key), percentile(time_to_resolve, #{opts[:percentage]}), max(time_to_resolve)",
-                            :conditions => "group by incident_key"
+                            :query_select => "select count(incident_key), percentile(time_to_resolve, #{opts[:percentage]}), max(time_to_resolve), input_type",
+                            :conditions => "group by incident_key, input_type"
              )
       # Firstly, don't try to provide analysis for data where we have less than 5 instances of it
       # Also remove alerts that don't have an incident key, or haven't been resolved yet.

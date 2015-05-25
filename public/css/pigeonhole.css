@@ -27,7 +27,7 @@ form#incidents th#category {
 
 @media (min-width: 1200px) {
   .container {
-    width: 1370px;
+    width: 100%;
   }
 
   .navbar-form .navform_search {

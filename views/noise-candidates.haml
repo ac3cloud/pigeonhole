@@ -12,6 +12,8 @@
     matching term
     = '"'+@search+'"'
 
+%div{:id => 'noisecandidatechart'}
+
 %form{:action => '', :method => 'post', :role => 'form', :class => 'form', :id => 'noise-candidates'}
   %h3
     Alert list ( total:
@@ -38,3 +40,43 @@
           %td= incident['entity']
           %td= incident['check']
           %td= incident['mean_time_to_resolve']
+
+%script{:src => "https://code.highcharts.com/highcharts.js"}
+:javascript
+  $(function () {
+    var data = #{@series}
+    $('#noisecandidatechart').highcharts({
+      chart: {
+        type: 'column'
+      },
+      credits: {
+          enabled: false
+      },
+      title: {
+          text: 'Top 50 noisiest alerts'
+      },
+      xAxis: {
+        categories: [ 'Alerts' ]
+      },
+      yAxis: {
+          min: 0,
+          title: {
+              text: 'Number of alerts'
+          }
+      },
+      legend: {
+          enabled: false
+      },
+      plotOptions: {
+        series: {
+          groupPadding: 0,
+          dataLabels: {
+            crop:     true,
+            enabled:  false,
+            overflow: 'justify',
+          }
+        }
+      },
+      series: data
+    });
+  });

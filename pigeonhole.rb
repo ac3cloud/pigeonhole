@@ -50,11 +50,27 @@ get '/:start_date/:end_date' do
     'needs documentation',
     'unclear, needs discussion'
   ]
-  @start_date = params["start_date"]
-  @end_date   = params["end_date"]
-  @search     = params["search"]
+  @start_date    = params["start_date"]
+  @end_date      = params["end_date"]
+  @search        = params["search"]
   @pagerduty_url = pagerduty.pagerduty_url
-  @incidents = influxdb.find_incidents(@start_date, @end_date, {:conditions => search_precondition })
+  @incidents     = influxdb.find_incidents(@start_date, @end_date, {:conditions => search_precondition })
+  @incidents.each do |incident|
+    incident['entity'], incident['check'] = incident['incident_key'].split(':', 2)
+    if !incident['check']
+      # We'll assume that all entities with / in the name are Sensu
+      if incident['entity'].include? "/"
+        incident['entity'], incident['check'] = incident['entity'].split('/')
+      elsif incident['entity'].downcase.include? "nagios"
+        # The last string is the check name in Nagios checks
+        partitioned_elements = incident['entity'].split(' ')
+        incident['entity'] = partitioned_elements[2]
+        last_count = partitioned_elements.count.to_i - 3
+        last_count = last_count < 1 ? last_count = 1 : last_count
+        incident['check'] = partitioned_elements.last(last_count).join(' ')
+      end
+    end
+  end
   haml :"index"
 end
 
@@ -82,7 +98,17 @@ get '/alert-response/:start_date/:end_date' do
   @incidents.each do |incident|
     incident['entity'], incident['check'] = incident['incident_key'].split(':', 2)
     if !incident['check']
-      incident['entity'], incident['check'] = incident['entity'].split('/')
+      # We'll assume that all entities with / in the name are Sensu
+      if incident['entity'].include? "/"
+        incident['entity'], incident['check'] = incident['entity'].split('/')
+      elsif incident['entity'].downcase.include? "nagios"
+        # The last string is the check name in Nagios checks
+        partitioned_elements = incident['entity'].split(' ')
+        incident['entity'] = partitioned_elements[2]
+        last_count = partitioned_elements.count.to_i - 3
+        last_count = last_count < 1 ? last_count = 1 : last_count
+        incident['check'] = partitioned_elements.last(last_count).join(' ')
+      end
     end
     incident['ack_by'] = 'N/A' if incident['ack_by'].nil?
     incident['time_to_ack'] = 'N/A' if incident['time_to_ack'] == 0
@@ -97,6 +123,7 @@ get '/noise-candidates/:start_date/:end_date' do
   @search     = params["search"]
   @incidents  = influxdb.noise_candidates(@start_date, @end_date, search_precondition)
   @total      = @incidents.count
+  @series     = HighCharts.noise_candidates(@incidents)
   haml :"noise-candidates"
 end
 

@@ -22,6 +22,8 @@
           \#
         %th#incident
           Incident
+        %th#source
+          Source
         %th#description
           Description
         %th#time
@@ -33,10 +35,13 @@
         - id = incident['id']
         %tr
           %td= index + 1
+          %td= incident['input_type']
           %td
             %a{:href => "#{@pagerduty_url}/incidents/#{id}"}= id
           %td= incident['description']
-          %td= Time.at(incident['time'])
+          %td
+            %abbr{:class => "timeago", :title => "#{Time.at(incident['time'])}"} 
+              "#{Time.at(incident['time'])}"
           %td
             %select{:name => id, :id => id, :class => "form-control"}
               -@categories.each do |category|

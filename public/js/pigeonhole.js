@@ -36,6 +36,8 @@ $(function(){
         $( "#start_date" ).datepicker( "option", "maxDate", selectedDate );
       }
     });
+
+    $("abbr.timeago").timeago();
 });
 
 
