@@ -36,6 +36,11 @@ get '/noise-candidates/?' do
   redirect "/noise-candidates/#{today}/#{today}"
 end
 
+get '/status' do
+  status 200
+  body ''
+end
+
 def search_precondition
   return "" unless @search
   "and incident_key =~ /.*#{@search}.*/i"
