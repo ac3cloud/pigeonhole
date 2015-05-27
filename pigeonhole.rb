@@ -63,7 +63,7 @@ get '/alert-frequency/:start_date/:end_date' do
   @end_date   = params["end_date"]
   @search     = params["search"]
   @incidents  = influxdb.incident_frequency(@start_date, @end_date, search_precondition)
-  @total      = @incidents.map { |x| x['count'] }.inject(:+)
+  @total      = @incidents.map { |x| x['count'] }.inject(:+) || 0
   @series     = HighCharts.alert_frequency(@incidents)
   haml :"alert-frequency"
 end
