@@ -77,7 +77,7 @@ get '/alert-response/:start_date/:end_date' do
   # Build table data
   @incidents  = resp[:incidents] || []
   @total      = @incidents.count
-  @acked      = @incidents.reject { |x| x['ack_by'].nil? }.count
+  @acked      = @incidents.reject { |x| x['time_to_ack'] == 0 }.count
   @pagerduty_url = pagerduty.pagerduty_url
   @incidents.each do |incident|
     incident['entity'], incident['check'] = incident['incident_key'].split(':', 2)
