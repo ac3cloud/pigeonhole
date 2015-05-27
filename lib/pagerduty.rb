@@ -75,6 +75,11 @@ class Pagerduty
       if log.any? { |x| x['type'] == 'acknowledge' }
         acknowledge      = log.select { |x| x['type'] == 'acknowledge' }.first
         acknowledge_by   = acknowledge['agent']['email']
+        # If the alert was acknowledged via Flapjack, we have no ack_by (only PagerDuty provides this)- the best we can get is the acknowledgement string
+        if acknowledge_by.nil?
+          match = acknowledge['channel']['summary'].match(/unscheduled maintenance created for.+, (.+)$/)
+          acknowledge_by = match[1] if match
+        end
         acknowledge_time = Time.parse(acknowledge['created_at'])
         time_to_ack      = acknowledge_time - problem_time
       end
