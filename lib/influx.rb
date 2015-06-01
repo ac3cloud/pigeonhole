@@ -264,7 +264,7 @@ module Influx
     end
 
     def generate_stats
-      shifts = TOML.load_file('config.toml')['shifts']
+      shifts = TOML.load_file('config.toml')['shifts'] || {}
       time_zone = shifts['time_zone']
       shifts.delete('time_zone')
 

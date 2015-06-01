@@ -3,11 +3,13 @@
   %h2 Total data (last 24 hours)
   = haml :'_stats_table', :locals => { :stats => @stat_summary[0] }
 
-%div{:class => "shifts"}
-  %h2 Breakdown by shift
- 
-  - @stat_summary[1..-1].each do |b|
-    = haml :'_stats_table', :locals => { :stats => b}
+
+- if @stat_summary.length > 1
+  %div{:class => "shifts"}
+    %h2 Breakdown by shift
+   
+    - @stat_summary[1..-1].each do |b|
+      = haml :'_stats_table', :locals => { :stats => b}
 
 %h3 Outstanding alerts:
 
