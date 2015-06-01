@@ -29,8 +29,7 @@ get '/' do
 
   @types = ["ack", "resolve"]
   @stats = ["mean","stddev","95_percentile"]
-
-  @daily_stats, @breakdown_by_time = influxdb.generate_daily_stats
+  @stat_summary = influxdb.generate_stats
   require 'pp'
   pp @daily_stats
   pp @breakdown_by_time

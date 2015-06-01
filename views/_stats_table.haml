@@ -1,12 +1,12 @@
 %div{:class => "stats_table"}
-  %div{:class => "title"}
-    = locals[:title]
-  %div{:class => "incidents"}
-    = locals[:stats]["count"] || 0
+  %div{:class => "title", :title => ("From #{locals[:stats][:start]} to #{locals[:stats][:end]}" if locals[:stats][:end])}
+    = locals[:stats][:title]
+    %div{:class => "incidents"}
+    = locals[:stats][:data]["count"] || 0
     incidents
   %div{:class => "s_ack"}
     Acknowledged in 60s:
-    = "#{locals[:stats]["ack_percent_in_60s"]}%"
+    = "#{locals[:stats][:data]["ack_percent_in_60s"]}%"
   %div{:class => "data_table"}
     %table
       - ["",@stats].flatten.each do |s|
@@ -21,4 +21,4 @@
               = @mapper[t]
             - @stats.each do |s|
               %td{:class => "#{s} value"}
-                = locals[:stats]["#{t}_#{s}"].to_i
+                = locals[:stats][:data]["#{t}_#{s}"].to_i

@@ -263,47 +263,36 @@ module Influx
       [unacked, unresolved]
     end
 
-    def generate_daily_stats
-      # First, we grab the stats for the last 24 hours
-      aggregate_select_str = "select count(incident_key), " + %w(ack resolve).map { |type|
-        "MEAN(time_to_#{type}) as #{type}_mean, STDDEV(time_to_#{type}) as #{type}_stddev, PERCENTILE(time_to_#{type}, 95) as #{type}_95_percentile"
-      }.join(', ')
-
-      daily_stats = find_incidents(nil, nil, :query_select => aggregate_select_str).first || {}
-      daily_stats['ack_percent_in_60s'] = ack_percent_before_timeout(:timeout => 60) || 0
-      daily_stats["name"] = "Last 24 hours"
-
+    def generate_stats
       shifts = TOML.load_file('config.toml')['shifts']
       time_zone = shifts['time_zone']
       shifts.delete('time_zone')
 
+      stat_matrix = [{ title: "Last 24 hours", start: nil, end: nil} ]
+ 
       shift_times = shifts.each do |_, shift|
         start_time = shift['start_time']
         duration = shift['duration'].to_i
-        # To get over 24 hours of data, we pick up all of yesterday's shifts, plus any of today's that don't start in the future.
-        days = if Time.parse("#{start_time} #{time_zone}").to_i + duration > Time.now.utc.to_i
-          # This shift starts in the future, only use yesterday's shift
-          [ Date.today.prev_day.strftime('%F') ]
-        else
-          [ Date.today.prev_day.strftime('%F'), Date.today.strftime('%F') ]
-        end
-
-        days.each do |day|
-          start_date = Chronic.parse("#{day} #{start_time}:00 #{time_zone}")
-          end_date = start_date + duration * 60
-
-          aggregated = find_incidents(start_date, end_date, :query_select => aggregate_select_str).first || {}
-          ack_percent_in_60s = ack_percent_before_timeout(:start_date => start_date, :end_date => end_date, :timeout => 60)
-          aggregated["ack_percent_in_60s"] = ack_percent_in_60s
-          shift['data'] = {
-            :start_date  => start_date.to_s,
-            :end_date => end_date.to_s,
-            :aggregated  => aggregated,
-          }
-        end
+        start_date = Chronic.parse("#{Date.today.prev_day.strftime('%F') } #{start_time}:00 #{time_zone}")
+        end_date = start_date + duration * 60
+        stat_matrix << { title: shift['name'], start: start_date, end: end_date }
       end
-
-      [ daily_stats, shifts ]
+     
+      aggregate_select_str = "select count(incident_key), " + %w(ack resolve).map { |type|
+        "MEAN(time_to_#{type}) as #{type}_mean, STDDEV(time_to_#{type}) as #{type}_stddev, PERCENTILE(time_to_#{type}, 95) as #{type}_95_percentile"
+      }.join(', ')
+ 
+      stat_matrix.each do |shift|
+          puts "get #{shift[:start]} to #{shift[:end]}"
+          aggregated = find_incidents(shift[:start], shift[:end], 
+                                      :query_select => aggregate_select_str).first || {}
+          ack_percent_in_60s = ack_percent_before_timeout(:start_date => shift[:start], :end_date => shift[:end],
+                                      :timeout => 60)
+          aggregated["ack_percent_in_60s"] = ack_percent_in_60s
+          shift[:data] = aggregated
+      end 
+      puts stat_matrix 
+      stat_matrix
     end
 
     def ack_percent_before_timeout(opts)
