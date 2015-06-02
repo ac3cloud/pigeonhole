@@ -4,18 +4,19 @@
     %meta{:charset => "utf-8"}
     %meta{:name => "viewport", :content => "width=device-width, initial-scale=1"}
     %title Pigeonhole
-    %link{:href => "//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css", :rel=>"stylesheet"}
+    %link{:href => "//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css", :rel=>"stylesheet"}
     %link{:href => "//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css", :rel=>"stylesheet"}
     %link{:href => "/css/tablesort.css", :rel=>"stylesheet"}
     %link{:href => "/css/pigeonhole.css", :rel=>"stylesheet"}
-    %link{:href => "/css/jquery-ui.css", :rel=>"stylesheet"}
-    %script{:src => "/js/jquery-1.11.1.min.js"}
-    %script{:src => "/js/jquery-ui.js"}
+    %link{:href => "/css/jquery-ui.min.css", :rel=>"stylesheet"}
+    %script{:src => "/js/jquery-2.1.4.min.js"}
+    %script{:src => "/js/jquery-ui.min.js"}
     %script{:src => "/js/jquery.tablesorter.min.js"}
     %script{:src => "/js/jquery.tablesorter.widgets.js"}
     %script{:src => "/js/jquery.timeago.js"}
     %script{:src => "/js/tablesort.js"}
     %script{:src => "/js/pigeonhole.js"}
+    %script{:src => "//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"}
   %body
     %nav{:class => 'navbar navbar-default datenav', :role => 'navigation'}
       %div.navbar-inner
@@ -42,10 +43,10 @@
               %input{:type => "text", :id => "search", :class => "form-control navform_search", :value => "#{@search}" }
             #startcontrol.form-group.date-select
               %label{:for => "start_date"} From
-              %input{:type => "date", :id => "start_date", :class => "form-control navform_date", :value => "#{@start_date}" }
+              %input{:id => "start_date", :class => "form-control navform_date", :value => "#{@start_date}" }
             #endcontrol.form-group.date-select
               %label{:for => "end_date"} to
-              %input{:type => "date", :id => "end_date", :class => "form-control navform_date", :value => "#{@end_date}" }
+              %input{:id => "end_date", :class => "form-control navform_date", :value => "#{@end_date}" }
             %div.form-group
               %input{:type => "button", :id => "reload", :class => "btn btn-success", :value => "Load" }
 
