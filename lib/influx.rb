@@ -278,7 +278,7 @@ module Influx
         Date.today.prev_day.strftime('%F'),
         Date.today.strftime('%F')
       ].each do |day|
-        shift_times = shifts.each do |_, shift|
+        shifts.each do |_, shift|
           start_time = shift['start_time']
           duration = shift['duration'].to_i
           start_date = Chronic.parse("#{day} #{start_time}:00")
