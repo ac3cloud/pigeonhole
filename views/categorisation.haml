@@ -31,7 +31,7 @@
         %tr
           %td= index + 1
           %td
-            %a{:href => "https://bltprf.pagerduty.com/incidents/#{id}"}= id
+            %a{:href => "#{@pagerduty_url}/incidents/#{id}"}= id
           %td= incident['description']
           %td= Time.at(incident['time'])
           %td

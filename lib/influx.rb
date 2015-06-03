@@ -254,9 +254,8 @@ module Influx
           'time_to_ack' => incident['time_to_ack'],
         }
       end
-      acked   = incidents.select {|x| x["time_to_ack"]}
-      unacked = incidents.reject {|x| x["time_to_ack"]}
-      [unacked, acked]
+      acked, unacked = incidents.partition {|x| x["time_to_ack"]}
+      [acked, unacked]
     end
 
     def generate_stats
