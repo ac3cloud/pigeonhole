@@ -31,9 +31,7 @@ get '/' do
   @types = ["ack", "resolve"]
   @stats = ["mean", "stddev", "95_percentile"]
   @stat_summary = influxdb.generate_stats
-  @unacked, @unresolved = influxdb.unaddressed_alerts
-  @unacked ||= []
-  @unresolved ||= []
+  @unacked, @acked = influxdb.unaddressed_alerts
   haml :"index"
 end
 

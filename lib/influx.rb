@@ -241,25 +241,22 @@ module Influx
       return [] if incidents.empty?
       unacked = []
       unresolved = []
-      incidents.map { |incident|
-        next if incident['incident_key'].nil?
+      # FIXME: this reject should be done at the time of querying InfluxDB.
+      incidents.reject! {|incident| incident['incident_key'].nil? || incident['time_to_resolve']}
+      incidents = incidents.map do |incident|
         entity, check = incident['incident_key'].split(':', 2)
-        member = {
+        {
           'alert_time' => incident["time"],
           'id' => incident['id'],
           'entity' => entity,
           'check'  => check,
-          'ack_by' => incident['acknowledge_by'],
+          'ack_by' => incident['acknowledge_by'] || 'N/A',
           'time_to_ack' => incident['time_to_ack'],
-          'time_to_resolve' => incident['time_to_resolve']
         }
-        if member["time_to_ack"].nil? && member["time_to_resolve"].nil?
- 	    unacked << member
-        elsif member["time_to_resolve"].nil?
-            unresolved << member
-        end
-      }
-      [unacked, unresolved]
+      end
+      acked   = incidents.select {|x| x["time_to_ack"]}
+      unacked = incidents.reject {|x| x["time_to_ack"]}
+      [unacked, acked]
     end
 
     def generate_stats

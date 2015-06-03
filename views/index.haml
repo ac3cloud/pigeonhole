@@ -13,13 +13,13 @@
 %h3 Outstanding alerts:
 
 - if @unacked.length > 0
-  %h4 The following alerts currently have not been acknowledged:
-  = haml :'_incident_table', :locals => { :incidents => @unacked }
+  %h4 The following alerts have not been acknowledged:
+  = haml :'_incident_table', :locals => { :incidents => @unacked, :no_ack => true, :no_resolve => true }
 
-- if @unresolved.length > 0
+- if @acked.length > 0
   %h4 The following alerts have been acknowledged, but not resolved:
-  = haml :'_incident_table', :locals => { :incidents => @unresolved }
+  = haml :'_incident_table', :locals => { :incidents => @acked, :no_resolve => true }
 
 
-- if @unacked.length == 0 && @unresolved.length == 0
+- if @unacked.length == 0 && @acked.length == 0
   No outstanding alerts. Everything is hunky-dory.

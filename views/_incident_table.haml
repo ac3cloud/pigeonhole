@@ -10,12 +10,14 @@
           Entity
         %th#check.col-md-2
           Check
-        %th#ack_by.col-md-1
-          Acknowledged by
-        %th#ack.col-md-1
-          Time to Acknowledge
-        %th#resolve.col-md-1
-          Time to Resolve
+        - unless locals[:no_ack]
+          %th#ack_by.col-md-1
+            Acknowledged by
+          %th#ack.col-md-1
+            Time to Acknowledge
+        - unless locals[:no_resolve]
+          %th#resolve.col-md-1
+            Time to Resolve
     %tbody
       - locals[:incidents].each do |incident|
         %tr
@@ -24,6 +26,8 @@
             %a{:href => "https://bltprf.pagerduty.com/incidents/#{incident['id']}"}= incident['id']
           %td= incident['entity']
           %td= incident['check']
-          %td= incident['ack_by']
-          %td= incident['time_to_ack']
-          %td= incident['time_to_resolve']
+          - unless locals[:no_ack]
+            %td= incident['ack_by']
+            %td= incident['time_to_ack']
+          - unless locals[:no_resolve]
+            %td= incident['time_to_resolve']
