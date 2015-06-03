@@ -21,17 +21,16 @@ def today
 end
 
 get '/' do
-  @mapper = { 'ack' => 'Acknowleged',
- 'resolve' => 'Resolved',
- 'stddev' => 'Std Dev (σ)',
- '95_percentile' => '95th Percentile',
- 'mean' => 'Average (x̄)' }
-
+  @mapper = {
+    'ack' => 'Acknowleged',
+    'resolve' => 'Resolved',
+    'stddev' => 'Std Dev (σ)',
+    '95_percentile' => '95th Percentile',
+    'mean' => 'Average (x̄)'
+  }
   @types = ["ack", "resolve"]
-  @stats = ["mean","stddev","95_percentile"]
+  @stats = ["mean", "stddev", "95_percentile"]
   @stat_summary = influxdb.generate_stats
-  require 'pp'
-  pp @stat_summary
   @unacked, @unresolved = influxdb.unaddressed_alerts
   @unacked ||= []
   @unresolved ||= []
