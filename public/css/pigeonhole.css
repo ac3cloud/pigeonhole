@@ -45,18 +45,14 @@ form#incidents th#category {
 
 
 /* Index page - Statistics Table */
-.today {
-  /*display: inline-block;*/
-}
-
 .today h2, .shifts h2 {
   margin-left: 20px
 }
 
 .shifts {
   display:inline-block;
-  /*margin-left: 50px;*/
 }
+
 .stats_table {
   display: inline-block;
   margin-right: 20px;
