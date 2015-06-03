@@ -24,7 +24,7 @@ module Influx
       }
       @influxdb = InfluxDB::Client.new(database, credentials)
       if credentials_rw[:username] && credentials_rw[:password]
-        @influxdb_rw = InfluxDB::Client.new(database, credentials.merge(credentials_rw)) 
+        @influxdb_rw = InfluxDB::Client.new(database, credentials.merge(credentials_rw))
       end
       # FIXME: @influx.stopped? always returns nil in the 0.8 series
       fail("could not connect to influxdb") if @influxdb.stopped?
@@ -268,8 +268,8 @@ module Influx
       time_zone = shifts['time_zone']
       shifts.delete('time_zone')
 
-      stat_matrix = [{ title: "Last 24 hours", start: nil, end: nil} ]
- 
+      stat_matrix = [{ title: "Last 24 hours", start: Chronic.parse('24 hours ago'), end: Chronic.parse('now')} ]
+
       shift_times = shifts.each do |_, shift|
         start_time = shift['start_time']
         duration = shift['duration'].to_i
@@ -277,21 +277,20 @@ module Influx
         end_date = start_date + duration * 60
         stat_matrix << { title: shift['name'], start: start_date, end: end_date }
       end
-     
+
       aggregate_select_str = "select count(incident_key), " + %w(ack resolve).map { |type|
         "MEAN(time_to_#{type}) as #{type}_mean, STDDEV(time_to_#{type}) as #{type}_stddev, PERCENTILE(time_to_#{type}, 95) as #{type}_95_percentile"
       }.join(', ')
- 
+
       stat_matrix.each do |shift|
-          puts "get #{shift[:start]} to #{shift[:end]}"
-          aggregated = find_incidents(shift[:start], shift[:end], 
+          debug("get #{shift[:start]} to #{shift[:end]}")
+          aggregated = find_incidents(shift[:start], shift[:end],
                                       :query_select => aggregate_select_str).first || {}
           ack_percent_in_60s = ack_percent_before_timeout(:start_date => shift[:start], :end_date => shift[:end],
                                       :timeout => 60)
           aggregated["ack_percent_in_60s"] = ack_percent_in_60s
           shift[:data] = aggregated
-      end 
-      puts stat_matrix 
+      end
       stat_matrix
     end
 

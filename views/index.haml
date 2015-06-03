@@ -1,13 +1,11 @@
 %div{:class => "today"}
 
-  %h2 Total data (last 24 hours)
+  %h3 Aggregated statistics
   = haml :'_stats_table', :locals => { :stats => @stat_summary[0] }
-
 
 - if @stat_summary.length > 1
   %div{:class => "shifts"}
-    %h2 Breakdown by shift
-   
+    %h3 Breakdown by shift
     - @stat_summary[1..-1].each do |b|
       = haml :'_stats_table', :locals => { :stats => b}
 

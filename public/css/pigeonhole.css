@@ -45,45 +45,45 @@ form#incidents th#category {
 
 
 /* Index page - Statistics Table */
-.today { 
+.today {
+  /*display: inline-block;*/
+}
+
+.today h2, .shifts h2 {
+  margin-left: 20px
+}
+
+.shifts {
+  display:inline-block;
+  /*margin-left: 50px;*/
+}
+.stats_table {
+  display: inline-block;
+  margin-right: 20px;
+}
+
+.stats_table .title {
+  font-weight: bold;
   display: inline-block;
 }
 
-.today h2, .shifts h2 { 
-  margin-left: 20px 
-} 
-
-.shifts { 
-  display:inline-block;
-  margin-left: 50px;
-} 
-.stats_table { 
-  display: inline-block;
-  margin: 20px; 
-} 
-
-.stats_table .title { 
-  font-weight: bold;
-  display: inline-block;
-} 
-
-.stats_table .incidents { 
+.stats_table .incidents {
   display: block;
 }
 
-.stats_table td { 
-  text-align: right; 
-} 
+.stats_table td {
+  text-align: left;
+}
 
-.stats_table .row_header { 
+.stats_table .row_header {
   font-weight: bold
-} 
+}
 
 .stats_table .col_header {
-  align: center; 
-  font-weight: bold
-} 
+  align: center;
+  font-weight: bold;
+}
 
 .stats_table table td {
   padding: 5px;
-} 
+}

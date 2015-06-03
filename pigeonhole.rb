@@ -23,16 +23,15 @@ end
 get '/' do
   @mapper = { 'ack' => 'Acknowleged',
  'resolve' => 'Resolved',
- 'stddev' => 'σ',
- '95_percentile' => '95%',
- 'mean' => 'x̄' }
+ 'stddev' => 'Std Dev (σ)',
+ '95_percentile' => '95th Percentile',
+ 'mean' => 'Average (x̄)' }
 
   @types = ["ack", "resolve"]
   @stats = ["mean","stddev","95_percentile"]
   @stat_summary = influxdb.generate_stats
   require 'pp'
-  pp @daily_stats
-  pp @breakdown_by_time
+  pp @stat_summary
   @unacked, @unresolved = influxdb.unaddressed_alerts
   @unacked ||= []
   @unresolved ||= []
