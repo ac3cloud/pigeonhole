@@ -2,15 +2,12 @@
   %div{:class => "title", :title => ("From #{locals[:stats][:start]} to #{locals[:stats][:end]}" if locals[:stats][:end])}
     = locals[:stats][:title]
   %div{:class => "date", :title => ("From #{locals[:stats][:start]} to #{locals[:stats][:end]}" if locals[:stats][:end])}
-  (
-  = locals[:stats][:start].strftime("%-d %b %R")
-  \-
-  = locals[:stats][:end].strftime("%-d %b %R %z")
-  )
+  (#{locals[:stats][:start].strftime("%-d %b %R")} - #{locals[:stats][:end].strftime("%-d %b %R %z")})
   %div{:class => "incidents"}
-  = locals[:stats][:data]["count"] || 0
-  incidents,
-  = "#{locals[:stats][:data]["ack_percent_in_60s"]}% acknowledged in 1 minute"
+    %b #{locals[:stats][:data]["count"] || 0}
+    incidents,
+    %b #{locals[:stats][:data]["ack_percent_in_60s"]}%
+    acknowledged in 1 minute
   %div{:class => "data_table"}
     %table
       - ["",@stats].flatten.each do |s|

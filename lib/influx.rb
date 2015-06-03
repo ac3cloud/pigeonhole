@@ -265,33 +265,50 @@ module Influx
 
     def generate_stats
       shifts = TOML.load_file('config.toml')['shifts'] || {}
-      time_zone = shifts['time_zone']
+      Time.zone = shifts['time_zone'] || 'UTC'
+      Chronic.time_class = Time.zone
       shifts.delete('time_zone')
 
-      stat_matrix = [{ title: "Last 24 hours", start: Chronic.parse('24 hours ago'), end: Chronic.parse('now')} ]
-      stat_matrix << { title: "Last month", start: Chronic.parse('1 month ago'), end: Chronic.parse('now')}
-      stat_matrix << { title: "Last 3 months", start: Chronic.parse('3 months ago'), end: Chronic.parse('now')}
+      stat_matrix = [
+        { title: "Last 24 hours", start: Chronic.parse('24 hours ago'), end: Chronic.parse('now')},
+        { title: "Last month", start: Chronic.parse('1 month ago'), end: Chronic.parse('now')},
+        { title: "Last 3 months", start: Chronic.parse('3 months ago'), end: Chronic.parse('now')}
+      ]
 
-      shift_times = shifts.each do |_, shift|
-        start_time = shift['start_time']
-        duration = shift['duration'].to_i
-        start_date = Chronic.parse("#{Date.today.prev_day.strftime('%F') } #{start_time}:00 #{time_zone}")
-        end_date = start_date + duration * 60
-        stat_matrix << { title: shift['name'], start: start_date, end: end_date }
+      # We want to show data for one full shift each, plus the current shift.
+      # Due to timezones, this sometimes means we need to look back over the last 3 days
+      shift_matrix = []
+      [
+        Date.today.prev_day.prev_day.strftime('%F'),
+        Date.today.prev_day.strftime('%F'),
+        Date.today.strftime('%F')
+      ].each do |day|
+        shift_times = shifts.each do |_, shift|
+          start_time = shift['start_time']
+          duration = shift['duration'].to_i
+          start_date = Chronic.parse("#{day} #{start_time}:00")
+          # Eliminate any shifts starting in the future
+          next if start_date.to_i > Time.now.to_i
+          end_date = start_date + duration * 60
+          shift_matrix << { title: shift['name'], start: start_date, end: end_date }
+        end
       end
+      # Now we remove any full shifts that are older than the most recent full shift
+      num_shifts = shifts.length + 1
+      stat_matrix << shift_matrix.sort_by{ |x| x[:start] }.reverse.take(num_shifts).reverse
+      stat_matrix.flatten!
 
       aggregate_select_str = "select count(incident_key), " + %w(ack resolve).map { |type|
         "MEAN(time_to_#{type}) as #{type}_mean, STDDEV(time_to_#{type}) as #{type}_stddev, PERCENTILE(time_to_#{type}, 95) as #{type}_95_percentile"
       }.join(', ')
 
       stat_matrix.each do |shift|
-          debug("get #{shift[:start]} to #{shift[:end]}")
-          aggregated = find_incidents(shift[:start], shift[:end],
-                                      :query_select => aggregate_select_str).first || {}
-          ack_percent_in_60s = ack_percent_before_timeout(:start_date => shift[:start], :end_date => shift[:end],
-                                      :timeout => 60)
-          aggregated["ack_percent_in_60s"] = ack_percent_in_60s
-          shift[:data] = aggregated
+        aggregated = find_incidents(shift[:start], shift[:end],
+                                    :query_select => aggregate_select_str).first || {}
+        ack_percent_in_60s = ack_percent_before_timeout(:start_date => shift[:start], :end_date => shift[:end],
+                                    :timeout => 60)
+        aggregated["ack_percent_in_60s"] = ack_percent_in_60s
+        shift[:data] = aggregated
       end
       stat_matrix
     end
