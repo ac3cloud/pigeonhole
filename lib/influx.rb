@@ -300,7 +300,8 @@ module Influx
       stat_matrix.each do |shift|
         aggregated = find_incidents(shift[:start], shift[:end],
                                     :query_select => aggregate_select_str).first || {}
-        ack_percent_in_60s = ack_percent_before_timeout(:start_date => shift[:start], :end_date => shift[:end],
+        ack_percent_in_60s = ack_percent_before_timeout(:start_date => shift[:start], 
+                                    :end_date => shift[:end],
                                     :timeout => 60)
         aggregated["ack_percent_in_60s"] = ack_percent_in_60s
         shift[:data] = aggregated
