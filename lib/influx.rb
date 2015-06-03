@@ -237,7 +237,7 @@ module Influx
     def unaddressed_alerts
       start_date = Date.today.prev_day.strftime('%F')
       end_date = Date.today.strftime('%F')
-      incidents = find_incidents(start_date, end_date) ##TODO eep
+      incidents = find_incidents(start_date, end_date)
       return [] if incidents.empty?
       unacked = []
       unresolved = []
