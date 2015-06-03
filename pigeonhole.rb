@@ -17,7 +17,7 @@ influxdb = Influx::Db.new
 pagerduty = Pagerduty.new
 
 def today
-  Time.now.strftime("%Y-%m-%d")
+  Time.now.strftime('%Y-%m-%d')
 end
 
 get '/' do
@@ -81,7 +81,7 @@ get '/alert-frequency/:start_date/:end_date' do
   @end_date   = params["end_date"]
   @search     = params["search"]
   @incidents  = influxdb.incident_frequency(@start_date, @end_date, search_precondition)
-  @total      = @incidents.map { |x| x['count'] }.inject(:+)
+  @total      = @incidents.map { |x| x['count'] }.inject(:+) || 0
   @series     = HighCharts.alert_frequency(@incidents)
   haml :"alert-frequency"
 end
@@ -95,7 +95,7 @@ get '/alert-response/:start_date/:end_date' do
   # Build table data
   @incidents  = resp[:incidents] || []
   @total      = @incidents.count
-  @acked      = @incidents.reject { |x| x['ack_by'].nil? }.count
+  @acked      = @incidents.reject { |x| x['time_to_ack'] == 0 }.count
   @pagerduty_url = pagerduty.pagerduty_url
   @incidents.each do |incident|
     incident['entity'], incident['check'] = incident['incident_key'].split(':', 2)
@@ -147,6 +147,7 @@ post '/pagerduty' do
   rescue => e
     status 500
     {
+      :data  => data,
       :error => e.class,
       :message => e.message
     }.to_json
