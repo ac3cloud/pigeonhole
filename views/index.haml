@@ -1,12 +1,13 @@
 %div{:class => "today"}
 
   %h3 Aggregated statistics
-  = haml :'_stats_table', :locals => { :stats => @stat_summary[0] }
+  - @stat_summary[0..2].each do |b|
+    = haml :'_stats_table', :locals => { :stats => b}
 
-- if @stat_summary.length > 1
+- if @stat_summary.length > 3
   %div{:class => "shifts"}
     %h3 Breakdown by shift
-    - @stat_summary[1..-1].each do |b|
+    - @stat_summary[3..-1].each do |b|
       = haml :'_stats_table', :locals => { :stats => b}
 
 %h3 Outstanding alerts:

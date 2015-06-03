@@ -269,6 +269,8 @@ module Influx
       shifts.delete('time_zone')
 
       stat_matrix = [{ title: "Last 24 hours", start: Chronic.parse('24 hours ago'), end: Chronic.parse('now')} ]
+      stat_matrix << { title: "Last month", start: Chronic.parse('1 month ago'), end: Chronic.parse('now')}
+      stat_matrix << { title: "Last 3 months", start: Chronic.parse('3 months ago'), end: Chronic.parse('now')}
 
       shift_times = shifts.each do |_, shift|
         start_time = shift['start_time']
