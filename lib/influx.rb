@@ -72,8 +72,8 @@ module Influx
 
     def find_incidents(start_date = nil, end_date = nil, query_input = nil)
       timeseries = @config['series']
-      start_date = Chronic.parse(start_date, :guess => false).first unless start_date.nil?
-      end_date = Chronic.parse(end_date, :guess => false).last unless end_date.nil?
+      start_date = Chronic.parse(start_date, :guess => false).first unless start_date.nil? || start_date.is_a?(Time)
+      end_date = Chronic.parse(end_date, :guess => false).last unless end_date.nil? || end_date.is_a?(Time)
 
       # If we couldn't parse the given date, use the last 24 hours.
       end_date = (end_date.nil? || end_date.to_i > Time.now.to_i) ? Time.now.to_i : end_date.to_i
@@ -232,6 +232,91 @@ module Influx
           :formatted_threshold => formatted_threshold
         }
       end
+    end
+
+    def unaddressed_alerts
+      start_date = Date.today.prev_day.strftime('%F')
+      end_date = Date.today.strftime('%F')
+      incidents = find_incidents(start_date, end_date)
+      return [] if incidents.empty?
+      unacked = []
+      unresolved = []
+      # FIXME: this reject should be done at the time of querying InfluxDB.
+      incidents.reject! {|incident| incident['incident_key'].nil? || incident['time_to_resolve']}
+      incidents = incidents.map do |incident|
+        entity, check = incident['incident_key'].split(':', 2)
+        {
+          'alert_time' => incident["time"],
+          'id' => incident['id'],
+          'entity' => entity,
+          'check'  => check,
+          'ack_by' => incident['acknowledge_by'] || 'N/A',
+          'time_to_ack' => incident['time_to_ack'],
+        }
+      end
+      acked, unacked = incidents.partition {|x| x["time_to_ack"]}
+      [acked, unacked]
+    end
+
+    def generate_stats
+      shifts = TOML.load_file('config.toml')['shifts'] || {}
+      Time.zone = shifts['time_zone'] || 'UTC'
+      Chronic.time_class = Time.zone
+      shifts.delete('time_zone')
+
+      stat_matrix = [
+        { title: "Last 24 hours", start: Chronic.parse('24 hours ago'), end: Chronic.parse('now')},
+        { title: "Last month", start: Chronic.parse('1 month ago'), end: Chronic.parse('now')},
+        { title: "Last 3 months", start: Chronic.parse('3 months ago'), end: Chronic.parse('now')}
+      ]
+
+      # We want to show data for one full shift each, plus the current shift.
+      # Due to timezones, this sometimes means we need to look back over the last 3 days
+      shift_matrix = []
+      [
+        Date.today.prev_day.prev_day.strftime('%F'),
+        Date.today.prev_day.strftime('%F'),
+        Date.today.strftime('%F')
+      ].each do |day|
+        shifts.each do |_, shift|
+          start_time = shift['start_time']
+          duration = shift['duration'].to_i
+          start_date = Chronic.parse("#{day} #{start_time}:00")
+          # Eliminate any shifts starting in the future
+          next if start_date.to_i > Time.now.to_i
+          end_date = start_date + duration * 60
+          shift_matrix << { title: shift['name'], start: start_date, end: end_date }
+        end
+      end
+      # Now we remove any full shifts that are older than the most recent full shift
+      num_shifts = shifts.length + 1
+      stat_matrix << shift_matrix.sort_by{ |x| x[:start] }.reverse.take(num_shifts).reverse
+      stat_matrix.flatten!
+
+      aggregate_select_str = "select count(incident_key), " + %w(ack resolve).map { |type|
+        "MEAN(time_to_#{type}) as #{type}_mean, STDDEV(time_to_#{type}) as #{type}_stddev, PERCENTILE(time_to_#{type}, 95) as #{type}_95_percentile"
+      }.join(', ')
+
+      stat_matrix.each do |shift|
+        aggregated = find_incidents(shift[:start], shift[:end],
+                                    :query_select => aggregate_select_str).first || {}
+        ack_percent_in_60s = ack_percent_before_timeout(:start_date => shift[:start], 
+                                    :end_date => shift[:end],
+                                    :timeout => 60)
+        aggregated["ack_percent_in_60s"] = ack_percent_in_60s
+        shift[:data] = aggregated
+      end
+      stat_matrix
+    end
+
+    def ack_percent_before_timeout(opts)
+      select_str = "select time_to_ack"
+      incidents = find_incidents(opts[:start_date], opts[:end_date], :query_select => select_str)
+      total = incidents.count
+      return 0 if total == 0
+      timeout = opts[:timeout] || 60
+      under = incidents.reject { |x| x['time_to_ack'].nil? || x['time_to_ack'] > timeout }
+      100 * under.count / total
     end
 
     def save_categories(opts)

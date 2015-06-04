@@ -21,7 +21,23 @@ def today
 end
 
 get '/' do
-  redirect "/#{today}/#{today}"
+  @mapper = {
+    'ack' => 'Acknowleged',
+    'resolve' => 'Resolved',
+    'stddev' => 'Std Dev (σ)',
+    '95_percentile' => '95th Percentile',
+    'mean' => 'Average (x̄)'
+  }
+  @types = ["ack", "resolve"]
+  @stats = ["mean", "stddev", "95_percentile"]
+  @stat_summary = influxdb.generate_stats
+  @pagerduty_url = pagerduty.pagerduty_url
+  @acked, @unacked = influxdb.unaddressed_alerts
+  haml :"index"
+end
+
+get '/categorisation/?' do
+  redirect "/categorisation/#{today}/#{today}"
 end
 
 get '/alert-frequency/?' do
@@ -41,7 +57,7 @@ def search_precondition
   "and incident_key =~ /.*#{@search}.*/i"
 end
 
-get '/:start_date/:end_date' do
+get '/categorisation/:start_date/:end_date' do
   @categories = [
     'not set',
     'real',
@@ -55,7 +71,7 @@ get '/:start_date/:end_date' do
   @search     = params["search"]
   @pagerduty_url = pagerduty.pagerduty_url
   @incidents = influxdb.find_incidents(@start_date, @end_date, {:conditions => search_precondition })
-  haml :"index"
+  haml :"categorisation"
 end
 
 get '/alert-frequency/:start_date/:end_date' do
@@ -97,7 +113,7 @@ get '/noise-candidates/:start_date/:end_date' do
   haml :"noise-candidates"
 end
 
-post '/:start_date/:end_date' do
+post '/categorisation/:start_date/:end_date' do
   uri = "#{params["start_date"]}/#{params["end_date"]}"
   uri += "?search=#{params["search"]}" if params["search"]
   opts = {
@@ -126,7 +142,7 @@ post '/pagerduty' do
     influxdb.insert_incidents(incidents)
     status 200
     "Inserted incidents: #{incident_ids.join(', ')}"
-  rescue RuntimeError => e
+  rescue => e
     status 500
     {
       :data  => data,

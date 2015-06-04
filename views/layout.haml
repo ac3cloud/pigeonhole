@@ -4,8 +4,8 @@
     %meta{:charset => "utf-8"}
     %meta{:name => "viewport", :content => "width=device-width, initial-scale=1"}
     %title Pigeonhole
-    %link{:href => "//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css", :rel=>"stylesheet"}
-    %link{:href => "//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css", :rel=>"stylesheet"}
+    %link{:href => "/css/bootstrap.min.css", :rel=>"stylesheet"}
+    %link{:href => "/css/font-awesome.min.css", :rel=>"stylesheet"}
     %link{:href => "/css/tablesort.css", :rel=>"stylesheet"}
     %link{:href => "/css/pigeonhole.css", :rel=>"stylesheet"}
     %link{:href => "/css/jquery-ui.css", :rel=>"stylesheet"}
@@ -27,7 +27,7 @@
           - q = @search ? "?search=#{@search}" : ""
           %div.nav.navbar-nav
             %li
-              %a{:href=>"/#{@start_date}/#{@end_date}#{q}"} Categorisation
+              %a{:href=>"/categorisation/#{@start_date}/#{@end_date}#{q}"} Categorisation
             %li
               %a{:href=>"/alert-frequency/#{@start_date}/#{@end_date}#{q}"} Alert Frequency
             %li
@@ -35,18 +35,19 @@
             %li
               %a{:href=>"/noise-candidates/#{@start_date}/#{@end_date}#{q}"} Alert Noise Candidates
 
-          %div.navbar-form.navbar-right
-            #searchcontrol.form-group
-              %label{:for => "search"} Search
-              %input{:type => "text", :id => "search", :class => "form-control navform_search", :value => "#{@search}" }
-            #startcontrol.form-group.date-select
-              %label{:for => "start_date"} From
-              %input{:type => "date", :id => "start_date", :class => "form-control navform_date", :value => "#{@start_date}" }
-            #endcontrol.form-group.date-select
-              %label{:for => "end_date"} to
-              %input{:type => "date", :id => "end_date", :class => "form-control navform_date", :value => "#{@end_date}" }
-            %div.form-group
-              %input{:type => "button", :id => "reload", :class => "btn btn-success", :value => "load" }
+          - unless request.path_info == '/'
+            %div.navbar-form.navbar-right
+              #searchcontrol.form-group
+                %label{:for => "search"} Search
+                %input{:type => "text", :id => "search", :class => "form-control navform_search", :value => "#{@search}" }
+              #startcontrol.form-group.date-select
+                %label{:for => "start_date"} From
+                %input{:type => "date", :id => "start_date", :class => "form-control navform_date", :value => "#{@start_date}" }
+              #endcontrol.form-group.date-select
+                %label{:for => "end_date"} to
+                %input{:type => "date", :id => "end_date", :class => "form-control navform_date", :value => "#{@end_date}" }
+              %div.form-group
+                %input{:type => "button", :id => "reload", :class => "btn btn-success", :value => "load" }
 
     %div.container
       = yield
