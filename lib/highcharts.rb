@@ -14,7 +14,6 @@ module HighCharts
   end
 
   def self.noise_candidates(incidents)
-    puts incidents
     incidents.map { |incident|
       name = incident['entity']\
       # Truncate long check names by removing everything after and including the second -

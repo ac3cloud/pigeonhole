@@ -39,8 +39,7 @@
 
           %div.navbar-form.navbar-right
             #searchcontrol.form-group
-              %label{:for => "search"} Search
-              %input{:type => "text", :id => "search", :class => "form-control navform_search", :value => "#{@search}" }
+              %input{:type => "text", :id => "search", :class => "form-control navform_search", :placeholder => "Search", :value => "#{@search}" }
             #startcontrol.form-group.date-select
               %label{:for => "start_date"} From
               %input{:id => "start_date", :class => "form-control navform_date", :value => "#{@start_date}" }

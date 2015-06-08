@@ -15,8 +15,7 @@ module Influx
         :host           => @config['host'],
         :username       => @config['username'],
         :password       => @config['password'],
-        :port           => @config['port'],
-        :time_precision => 's'
+        :port           => @config['port']
       }
       credentials_rw = {
         :username       => @config['username_rw'],

@@ -4,7 +4,7 @@ $:.push(File.expand_path(File.join(__FILE__, '..', 'lib')))
 
 require 'sinatra'
 require 'influx'
-require 'haml'
+require 'tilt/haml'
 require 'date'
 require 'highcharts'
 require 'uri'
@@ -18,6 +18,58 @@ pagerduty = Pagerduty.new
 
 def today
   Time.now.strftime('%Y-%m-%d')
+end
+
+def parse_incidents(incidents)
+  @incidents.each do |incident|
+    if incident['incident_key'].to_s.include? ":"
+      incident['entity'], incident['check'] = incident['incident_key'].split(':', 2)
+    end
+    if incident['input_type'] == "Operations Sensu" or incident['input_type'] == "Operations Nagios"
+      partitioned_elements = incident['incident_key'].split(' ')
+      incident['entity'] = partitioned_elements[2]
+      last_count = partitioned_elements.count.to_i - 3
+      last_count = last_count < 1 ? last_count = 1 : last_count
+      incident['check'] = partitioned_elements.last(last_count).join(' ')
+    end
+#    if !incident['check'] && incident['entity'] != ""
+#      puts incident['entity']
+#      # We'll assume that all entities with / in the name are Sensu
+#      if incident['entity'].include? "/"
+#        incident['entity'], incident['check'] = incident['entity'].split('/')
+#      elsif incident['entity'].downcase.include? "nagios"
+#        # The last string is the check name in Nagios checks
+#        partitioned_elements = incident['entity'].split(' ')
+#        incident['entity'] = partitioned_elements[2]
+#        last_count = partitioned_elements.count.to_i - 3
+#        last_count = last_count < 1 ? last_count = 1 : last_count
+#        incident['check'] = partitioned_elements.last(last_count).join(' ')
+#      end
+#    end
+    if !incident['entity']
+      incident['entity'] = incident['incident_key']
+    end
+    incident['ack_by'] = 'N/A' if incident['ack_by'].nil?
+    incident['time_to_ack'] = 'N/A' if incident['time_to_ack'] == 0
+    case incident['time_to_ack']
+      when 'N/A'
+        incident['time_to_ack_unit'] = ''
+      when 1; 
+        incident['time_to_ack_unit'] = 'minute'
+      else 
+        incident['time_to_ack_unit'] = 'minutes'
+    end
+    incident['time_to_resolve'] = 'N/A' if incident['time_to_resolve'] == 0
+    case incident['time_to_resolve']
+      when 'N/A'
+        incident['time_to_resolve_unit'] = ''
+      when 1
+        incident['time_to_resolve_unit'] = 'minute'
+      else
+        incident['time_to_resolve_unit'] = 'minutes'
+    end
+
+  end
 end
 
 get '/' do
@@ -60,22 +112,7 @@ get '/:start_date/:end_date' do
   @search        = params["search"]
   @pagerduty_url = pagerduty.pagerduty_url
   @incidents     = influxdb.find_incidents(@start_date, @end_date, {:conditions => search_precondition })
-  @incidents.each do |incident|
-    incident['entity'], incident['check'] = incident['incident_key'].split(':', 2)
-    if !incident['check']
-      # We'll assume that all entities with / in the name are Sensu
-      if incident['entity'].include? "/"
-        incident['entity'], incident['check'] = incident['entity'].split('/')
-      elsif incident['entity'].downcase.include? "nagios"
-        # The last string is the check name in Nagios checks
-        partitioned_elements = incident['entity'].split(' ')
-        incident['entity'] = partitioned_elements[2]
-        last_count = partitioned_elements.count.to_i - 3
-        last_count = last_count < 1 ? last_count = 1 : last_count
-        incident['check'] = partitioned_elements.last(last_count).join(' ')
-      end
-    end
-  end
+  @incidents     = parse_incidents(@incidents)
   haml :"index"
 end
 
@@ -100,25 +137,7 @@ get '/alert-response/:start_date/:end_date' do
   @total      = @incidents.count
   @acked      = @incidents.reject { |x| x['ack_by'].nil? }.count
   @pagerduty_url = pagerduty.pagerduty_url
-  @incidents.each do |incident|
-    incident['entity'], incident['check'] = incident['incident_key'].split(':', 2)
-    if !incident['check']
-      # We'll assume that all entities with / in the name are Sensu
-      if incident['entity'].include? "/"
-        incident['entity'], incident['check'] = incident['entity'].split('/')
-      elsif incident['entity'].downcase.include? "nagios"
-        # The last string is the check name in Nagios checks
-        partitioned_elements = incident['entity'].split(' ')
-        incident['entity'] = partitioned_elements[2]
-        last_count = partitioned_elements.count.to_i - 3
-        last_count = last_count < 1 ? last_count = 1 : last_count
-        incident['check'] = partitioned_elements.last(last_count).join(' ')
-      end
-    end
-    incident['ack_by'] = 'N/A' if incident['ack_by'].nil?
-    incident['time_to_ack'] = 'N/A' if incident['time_to_ack'] == 0
-    incident['time_to_resolve'] = 'N/A' if incident['time_to_resolve'] == 0
-  end
+  @incidents = parse_incidents(@incidents)
   haml :"alert-response"
 end
 

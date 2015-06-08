@@ -31,10 +31,10 @@ form#incidents th#category {
   }
 
   .navbar-form .navform_search {
-    width: 115px
+    width: 175px
   }
   .navbar-form .navform_date {
-    width: 155px
+    width: 100px
   }
 }
 

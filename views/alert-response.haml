@@ -50,8 +50,8 @@
           %td= incident['entity']
           %td= incident['check']
           %td= incident['ack_by']
-          %td= case incident['time_to_ack']; when 'N/A'; incident['time_to_ack']; when 1; "#{incident['time_to_ack']} minute"; else; "#{incident['time_to_ack']} minutes"; end
-          %td= case incident['time_to_resolve']; when 'N/A'; incident['time_to_resolve']; when 1; "#{incident['time_to_resolve']} minute"; else; "#{incident['time_to_resolve']} minutes"; end
+          %td= "#{incident['time_to_ack']} #{incident['time_to_ack_unit']}"
+          %td= "#{incident['time_to_resolve']} #{incident['time_to_resolve_unit']}"
 
 %script{:src => "https://code.highcharts.com/highcharts.js"}
 %script{:src => "https://code.highcharts.com/highcharts-more.js"}
