@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-$:.push(File.expand_path(File.join(__FILE__, '..', '..', 'lib')))
+$LOAD_PATH.push(File.expand_path(File.join(__FILE__, '..', '..', 'lib')))
 
 require 'time'
 require 'methadone'

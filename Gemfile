@@ -11,7 +11,7 @@ gem 'haml'
 gem 'chronic'
 gem 'chronic_duration'
 gem 'toml-rb'
-gem 'activesupport', require: ['activesupport/core_ext/numeric/time']
+gem 'activesupport', :require => ['activesupport/core_ext/numeric/time']
 gem 'parallel'
 
 group :development do

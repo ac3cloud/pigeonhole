@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-$:.push(File.expand_path(File.join(__FILE__, '..', '..', 'lib')))
+$LOAD_PATH.push(File.expand_path(File.join(__FILE__, '..', '..', 'lib')))
 
 require 'methadone'
 require 'pagerduty'
@@ -13,11 +13,11 @@ include Methadone::CLILogging
 
 main do |oncall_date|
   @config = TOML.load_file('config.toml')['email_reminder']
-  raise "Could not load credentials file at config.toml" if @config.nil? || @config.empty?
+  raise 'Could not load credentials file at config.toml' if @config.nil? || @config.empty?
   oncall_date  = oncall_date ? Time.parse(oncall_date) : Time.now
   pagerduty = Pagerduty.new
   oncall_staff = pagerduty.oncall(oncall_date)
-  oncall_staff.each do |schedule,users|
+  oncall_staff.each do |_schedule, users|
     users.each { |email| send_email(email) }
   end
 end

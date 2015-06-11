@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-$:.push(File.expand_path(File.join(__FILE__, '..', 'lib')))
+$LOAD_PATH.push(File.expand_path(File.join(__FILE__, '..', 'lib')))
 
 require 'sinatra'
 require 'influx'
@@ -28,12 +28,12 @@ get '/' do
     '95_percentile' => '95th Percentile',
     'mean' => 'Average (x̄)'
   }
-  @types = ["ack", "resolve"]
-  @stats = ["mean", "stddev", "95_percentile"]
+  @types = %w(ack resolve)
+  @stats = %w(mean stddev 95_percentile)
   @stat_summary = influxdb.generate_stats
   @pagerduty_url = pagerduty.pagerduty_url
   @acked, @unacked = influxdb.unaddressed_alerts
-  haml :"index"
+  haml :index
 end
 
 get '/categorisation/?' do
@@ -53,7 +53,7 @@ get '/noise-candidates/?' do
 end
 
 def search_precondition
-  return "" unless @search
+  return '' unless @search
   "and incident_key =~ /.*#{@search}.*/i"
 end
 
@@ -66,18 +66,18 @@ get '/categorisation/:start_date/:end_date' do
     'needs documentation',
     'unclear, needs discussion'
   ]
-  @start_date = params["start_date"]
-  @end_date   = params["end_date"]
-  @search     = params["search"]
+  @start_date = params['start_date']
+  @end_date   = params['end_date']
+  @search     = params['search']
   @pagerduty_url = pagerduty.pagerduty_url
-  @incidents = influxdb.find_incidents(@start_date, @end_date, {:conditions => search_precondition })
-  haml :"categorisation"
+  @incidents = influxdb.find_incidents(@start_date, @end_date, :conditions => search_precondition)
+  haml :categorisation
 end
 
 get '/alert-frequency/:start_date/:end_date' do
-  @start_date = params["start_date"]
-  @end_date   = params["end_date"]
-  @search     = params["search"]
+  @start_date = params['start_date']
+  @end_date   = params['end_date']
+  @search     = params['search']
   @incidents  = influxdb.incident_frequency(@start_date, @end_date, search_precondition)
   @total      = @incidents.map { |x| x['count'] }.inject(:+) || 0
   @series     = HighCharts.alert_frequency(@incidents)
@@ -85,15 +85,15 @@ get '/alert-frequency/:start_date/:end_date' do
 end
 
 get '/alert-response/:start_date/:end_date' do
-  @start_date = params["start_date"]
-  @end_date   = params["end_date"]
-  @search     = params["search"]
+  @start_date = params['start_date']
+  @end_date   = params['end_date']
+  @search     = params['search']
   resp = influxdb.alert_response(@start_date, @end_date, search_precondition)
   @series     = HighCharts.alert_response(resp)
   # Build table data
   @incidents  = resp[:incidents] || []
   @total      = @incidents.count
-  @acked      = @incidents.reject { |x| x['time_to_ack'] == 0 }.count
+  @acked      = @incidents.count { |x| x['time_to_ack'] != 0 }
   @pagerduty_url = pagerduty.pagerduty_url
   @incidents.each do |incident|
     incident['entity'], incident['check'] = incident['incident_key'].split(':', 2)
@@ -105,27 +105,27 @@ get '/alert-response/:start_date/:end_date' do
 end
 
 get '/noise-candidates/:start_date/:end_date' do
-  @start_date = params["start_date"]
-  @end_date   = params["end_date"]
-  @search     = params["search"]
+  @start_date = params['start_date']
+  @end_date   = params['end_date']
+  @search     = params['search']
   @incidents  = influxdb.noise_candidates(@start_date, @end_date, search_precondition)
   @total      = @incidents.count
   haml :"noise-candidates"
 end
 
 post '/categorisation/:start_date/:end_date' do
-  uri = "#{params["start_date"]}/#{params["end_date"]}"
-  uri += "?search=#{params["search"]}" if params["search"]
+  uri = "#{params['start_date']}/#{params['end_date']}"
+  uri += "?search=#{params['search']}" if params['search']
   opts = {
     :start_date => params[:start_date],
     :end_date   => params[:end_date],
     :search     => params[:search]
   }
-  params.delete("start_date")
-  params.delete("end_date")
-  params.delete("search")
-  params.delete("splat")
-  params.delete("captures")
+  params.delete('start_date')
+  params.delete('end_date')
+  params.delete('search')
+  params.delete('splat')
+  params.delete('captures')
 
   opts[:data] = params
   influxdb.save_categories(opts)
