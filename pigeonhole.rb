@@ -31,8 +31,31 @@ get '/' do
   @types = ["ack", "resolve"]
   @stats = ["mean", "stddev", "95_percentile"]
   @stat_summary = influxdb.generate_stats
+  @stat_summary.each do |stat|
+    data = stat[:data]
+    data['count'] = rand(500)
+    data['ack_mean'] = rand(20)
+    data['ack_stddev'] = rand(10)
+    data['ack_95_percentile'] = rand(40)
+    data['resolve_mean'] = rand(300)
+    data['resolve_stddev'] = rand(40)
+    data['resolve_95_percentile'] = rand(300)
+    data['ack_percent_in_60s'] = rand(100)
+  end
   @pagerduty_url = pagerduty.pagerduty_url
   @acked, @unacked = influxdb.unaddressed_alerts
+  @acked.each do |incident|
+    incident['id'] = rand(36**8).to_s(36).upcase
+    incident['entity'] = Digest::SHA512.hexdigest(incident['entity'])[0..20]
+    incident['check'] = Digest::SHA512.hexdigest(incident['check'])[0..20] unless incident['check'].nil?
+    incident['ack_by'] = incident['ack_by'].nil? ? 'N/A' : rand(36**8).to_s(36).upcase + '@example.com'
+    incident['time_to_ack'] = incident['time_to_ack'] == 0 ? 'N/A' : rand(60)
+  end
+  @unacked.each do |incident|
+    incident['id'] = rand(36**8).to_s(36).upcase
+    incident['entity'] = Digest::SHA512.hexdigest(incident['entity'])[0..20]
+    incident['check'] = Digest::SHA512.hexdigest(incident['check'])[0..20]
+  end
   haml :"index"
 end
 
@@ -107,10 +130,10 @@ get '/alert-response/:start_date/:end_date' do
     incident['entity'], incident['check'] = incident['incident_key'].split(':', 2)
     incident['id'] = rand(36**8).to_s(36).upcase
     incident['entity'] = Digest::SHA512.hexdigest(incident['entity'])[0..20]
-    incident['check'] = Digest::SHA512.hexdigest(incident['check'])[0..20]
+    incident['check'] = Digest::SHA512.hexdigest(incident['check'])[0..20] unless incident['check'].nil?
     incident['ack_by'] = incident['ack_by'].nil? ? 'N/A' : rand(36**8).to_s(36).upcase + '@example.com'
-    incident['time_to_ack'] = 'N/A' if incident['time_to_ack'] == 0
-    incident['time_to_resolve'] = 'N/A' if incident['time_to_resolve'] == 0
+    incident['time_to_ack'] = incident['time_to_ack'] == 0 ? 'N/A' : rand(10)
+    incident['time_to_resolve'] =  incident['time_to_resolve'] == 0 ? 'N/A' : rand(20)
   end
   haml :"alert-response"
 end
