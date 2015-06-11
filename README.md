@@ -15,7 +15,7 @@ After these have been installed, copy the config.toml.example file to config.tom
 
 Pigeonhole operates as a read-only user with the exception of the categorisation. If you're using the categorisation feature you'll have to add a read-write user as well.
 
-To setup the two users, the following commands can be invoked (works for InfluxDB 0.8.8): 
+To setup the two users, the following commands can be invoked (works for InfluxDB 0.8.8):
 
 ```
 INFLUX=http://localhost:8086
@@ -122,20 +122,24 @@ bundle exec ruby bin/alert_threshold_recommendations.rb --percent-to-remove 70 -
 
 ## Screenshots
 
+### Statistics (default) mode
+
+![Statistics Mode](screenshots/statistics.png?raw=true "Statistics Mode")
+
 ### Categorisation mode
 
 ![Categorisation Mode](screenshots/categorisation.png?raw=true "Categorisation Mode")
 
-### Breakdown mode
+### Frequency mode
 
-![Breakdown Mode](screenshots/breakdown.png?raw=true "Breakdown Mode")
+![Frequency Mode](screenshots/frequency.png?raw=true "Frequency Mode")
 
 ### Acknowledgement and resolution times mode
 
-![Breakdown Mode](screenshots/alert-response.png?raw=true "Alert Response Mode")
+![Alert Response Mode](screenshots/alert-response.png?raw=true "Alert Response Mode")
 
 ### Noise candidate mode
 
-![Breakdown Mode](screenshots/noise-candidates.png?raw=true "Noise Candidates Mode")
+![Noise Candidates Mode](screenshots/noise-candidates.png?raw=true "Noise Candidates Mode")
 
 We hope you find this useful!
