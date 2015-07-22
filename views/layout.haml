@@ -30,7 +30,7 @@
           - q = @search ? "?search=#{@search}" : ""
           %div.nav.navbar-nav
             %li
-              %a{:href=>"/#{@start_date}/#{@end_date}#{q}"} Categorisation
+              %a{:href=>"/categorisation/#{@start_date}/#{@end_date}#{q}"} Categorisation
             %li
               %a{:href=>"/alert-frequency/#{@start_date}/#{@end_date}#{q}"} Alert Frequency
             %li
@@ -38,17 +38,17 @@
             %li
               %a{:href=>"/noise-candidates/#{@start_date}/#{@end_date}#{q}"} Alert Noise Candidates
 
-          %div.navbar-form.navbar-right
-            #searchcontrol.form-group
-              %input{:type => "text", :id => "search", :class => "form-control navform_search", :placeholder => "Search", :value => "#{@search}" }
-            #startcontrol.form-group.date-select
-              %label{:for => "start_date"} From
-              %input{:id => "start_date", :class => "form-control navform_date", :value => "#{@start_date}" }
-            #endcontrol.form-group.date-select
-              %label{:for => "end_date"} to
-              %input{:id => "end_date", :class => "form-control navform_date", :value => "#{@end_date}" }
-            %div.form-group
-              %input{:type => "button", :id => "reload", :class => "btn btn-success", :value => "Load" }
-
+          - unless request.path_info == '/'
+            %div.navbar-form.navbar-right
+              #searchcontrol.form-group
+                %input{:type => "text", :id => "search", :class => "form-control navform_search", :placeholder => "Search", :value => "#{@search}" }
+              #startcontrol.form-group.date-select
+                %label{:for => "start_date"} From
+                %input{:id => "start_date", :class => "form-control navform_date", :value => "#{@start_date}" }
+              #endcontrol.form-group.date-select
+                %label{:for => "end_date"} to
+                %input{:id => "end_date", :class => "form-control navform_date", :value => "#{@end_date}" }
+              %div.form-group
+                %input{:type => "button", :id => "reload", :class => "btn btn-success", :value => "Load" }
     %div.container
       = yield

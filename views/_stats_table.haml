@@ -1,0 +1,25 @@
+%div{:class => "stats_table"}
+  %div{:class => "title", :title => ("From #{locals[:stats][:start]} to #{locals[:stats][:end]}" if locals[:stats][:end])}
+    = locals[:stats][:title]
+  %div{:class => "date", :title => ("From #{locals[:stats][:start]} to #{locals[:stats][:end]}" if locals[:stats][:end])}
+  (#{locals[:stats][:start].strftime("%-d %b %R")} - #{locals[:stats][:end].strftime("%-d %b %R %z")})
+  %div{:class => "incidents"}
+    %b #{locals[:stats][:data]["count"] || 0}
+    incidents,
+    %b #{locals[:stats][:data]["ack_percent_in_60s"]}%
+    acknowledged in 1 minute
+  %div{:class => "data_table"}
+    %table
+      - ["",@stats].flatten.each do |s|
+        %td
+          %span{:class => "col_header", :title => "#{s}"}
+            = @mapper[s] || s
+
+      - @types.each do |t|
+        %tr
+          %td
+            %span{:class => "row_header"}
+              = @mapper[t]
+            - @stats.each do |s|
+              %td{:class => "#{s} value"}
+                = seconds = locals[:stats][:data]["#{t}_#{s}"].to_i; seconds > 120 ? "#{seconds/60} min" : "#{seconds} s"

@@ -22,36 +22,36 @@ module HighCharts
         :name => name,
         :data => [incident['count']]
       }
-    }.slice(0, 50).to_json
+    end.slice(0, 50).to_json
   end
 
   def self.alert_response(opts)
     return {} unless opts[:incidents]
     if opts[:aggregated]
-      ack_data, resolve_data = %w(ack resolve).map { |type|
-        opts[:aggregated].map { |i|
+      ack_data, resolve_data = %w(ack resolve).map do |type|
+        opts[:aggregated].map do |i|
           [i['time'] * 1000, i["mean_#{type}"]]
-        }
-      }.compact.sort
+        end
+      end.compact.sort
       ack_name = 'Average time until acknowledgement of alert'
       resolve_name = 'Average time until alert was resolved'
     else
-      ack_data, resolve_data = %w(ack resolve).map { |type|
-        opts[:incidents].map { |i|
+      ack_data, resolve_data = %w(ack resolve).map do |type|
+        opts[:incidents].map do |i|
           {
-            name: i['incident_key'],
-            x: i['alert_time'] * 1000,
-            y: i["time_to_#{type}"]
+            :name => i['incident_key'],
+            :x => i['alert_time'] * 1000,
+            :y => i["time_to_#{type}"]
           }
-        }.compact.sort_by { |k| k[:x] }
-      }
+        end.compact.sort_by { |k| k[:x] }
+      end
       ack_name = 'Time until acknowledgement of alert'
       resolve_name = 'Time until alert was resolved'
     end
 
-    count_data = opts[:count].map { |i|
+    count_data = opts[:count].map do |i|
       [i['time'] * 1000, i['count']]
-    }.compact.sort
+    end.compact.sort
 
     [
       {

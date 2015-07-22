@@ -6,7 +6,7 @@ require 'parallel'
 class Pagerduty
   def initialize
     @config = TOML.load_file('config.toml')['pagerduty']
-    raise "Could not load credentials file at config.toml" if @config.nil? || @config.empty?
+    raise 'Could not load credentials file at config.toml' if @config.nil? || @config.empty?
     @config['auth_token'] = "Token token=#{@config['auth_token']}" unless @config['auth_token'].start_with?('Token token=')
   end
 
@@ -25,7 +25,7 @@ class Pagerduty
       endpoint = "#{endpoint}#{char}sort_by=created_on:desc&offset=#{pagination_offset}"
       response = HTTParty.get(
         endpoint,
-        headers: {
+        :headers => {
           'Content-Type'  => 'application/json',
           'Authorization' => @config['auth_token']
         }
@@ -40,9 +40,9 @@ class Pagerduty
   end
 
   def incidents(start_date, finish_date = nil)
-    finish_clause     = finish_date ? finish_clause = "&until=#{finish_date}" : ""
+    finish_clause     = finish_date ? "&until=#{finish_date}" : ''
     time_zone = @config['time_zone']
-    endpoint  = "#{self.pagerduty_url}/api/v1/incidents?since=#{start_date}#{finish_clause}&time_zone=#{time_zone}"
+    endpoint  = "#{pagerduty_url}/api/v1/incidents?since=#{start_date}#{finish_clause}&time_zone=#{time_zone}"
     response  = request(endpoint)
     incidents = response.map do |incident|
       tmp = {
@@ -65,22 +65,29 @@ class Pagerduty
   def add_ack_resolve(incidents)
     Parallel.each(incidents, :in_threads => 20) do |incident|
       incident_id      = incident[:id]
-      log              = request("#{self.pagerduty_url}/api/v1/incidents/#{incident_id}/log_entries").sort_by { |x| x['created_at'] }
-      problem          = log.select { |x| x['type'] == 'trigger' }.first
+      log              = request("#{pagerduty_url}/api/v1/incidents/#{incident_id}/log_entries")
+                         .sort_by { |x| x['created_at'] }
+      problem          = log.find { |x| x['type'] == 'trigger' }
       problem_time     = Time.parse(problem['created_at'])
       acknowledge_by   = nil
       time_to_ack      = nil
       time_to_resolve  = nil
 
       if log.any? { |x| x['type'] == 'acknowledge' }
-        acknowledge      = log.select { |x| x['type'] == 'acknowledge' }.first
+        acknowledge      = log.find { |x| x['type'] == 'acknowledge' }
         acknowledge_by   = acknowledge['agent']['email']
+        # If the alert was acknowledged via Flapjack, we have no ack_by
+        # (only PagerDuty provides this)- the best we can get is the acknowledgement string
+        if acknowledge_by.nil?
+          match = acknowledge['channel']['summary'].match(/unscheduled maintenance created for.+, (.+)$/)
+          acknowledge_by = match[1] if match
+        end
         acknowledge_time = Time.parse(acknowledge['created_at'])
         time_to_ack      = acknowledge_time - problem_time
       end
 
       if log.any? { |x| x['type'] == 'resolve' }
-        resolve         = log.select { |x| x['type'] == 'resolve' }.first
+        resolve         = log.find { |x| x['type'] == 'resolve' }
         resolve_time    = Time.parse(resolve['created_at'])
         time_to_resolve = resolve_time - problem_time
       end
@@ -110,7 +117,7 @@ class Pagerduty
     until_date = Time.parse("#{until_date.strftime('%F')} 09:30:00") # 09:30h end
     oncall = {}
     schedules.each do |name, schedule|
-      endpoint = "#{self.pagerduty_url}/schedules/#{schedule}/users?since=#{since_date.iso8601}&until=#{until_date.iso8601}"
+      endpoint = "#{pagerduty_url}/schedules/#{schedule}/users?since=#{since_date.iso8601}&until=#{until_date.iso8601}"
       response = request(endpoint)
       response['users'].each do |user|
         oncall[name.to_sym] ||= []

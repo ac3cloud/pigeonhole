@@ -14,7 +14,7 @@
   # Auth token can be given with or without the preceding 'Token token='
   auth_token = "2731ca1f7ee10ed57311"
   account_name = "mycompany"
-  time_zone  = "Sydney"
+  time_zone  = "UTC"
 
 [pagerduty.schedules]
   # These are the IDs from your PagerDuty On-Call Schedules,
@@ -36,3 +36,22 @@ http://pigeonhole.example.com/
 
 Thanks!
 """
+
+[shifts]
+  time_zone = "UTC"
+
+[shifts.first_shift]
+  name = "First Shift (Sydney)"
+  start_time = "22:00"
+  # Duration is set in minutes
+  duration = "480"
+
+[shifts.second_shift]
+  name = "Second Shift (South Africa)"
+  start_time = "06:00"
+  duration = "480"
+
+[shifts.third_shift]
+  name = "Third Shift (America)"
+  start_time = "14:00"
+  duration = "480"
