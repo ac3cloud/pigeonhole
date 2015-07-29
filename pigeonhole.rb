@@ -10,11 +10,14 @@ require 'highcharts'
 require 'uri'
 require 'pagerduty'
 require 'methadone'
+require 'version'
 
 include Methadone::CLILogging
 
 influxdb = Influx::Db.new
 pagerduty = Pagerduty.new
+
+puts "This is Pigeonhole #{VERSION}. Enjoy!"
 
 def today
   Time.now.strftime('%Y-%m-%d')
