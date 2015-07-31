@@ -10,6 +10,7 @@ require 'highcharts'
 require 'uri'
 require 'pagerduty'
 require 'methadone'
+require 'pp'
 
 include Methadone::CLILogging
 
@@ -21,31 +22,29 @@ def today
 end
 
 def parse_incidents(incidents)
-  @incidents.each do |incident|
-    if incident['incident_key'].to_s.include? ":"
-      incident['entity'], incident['check'] = incident['incident_key'].split(':', 2)
-    end
-    if incident['input_type'] == "Operations Sensu" or incident['input_type'] == "Operations Nagios"
+  incidents.each do |incident|
+    if incident['incident_key'].start_with? "nagios" or incident['incident_key'].start_with? "sensu"
       partitioned_elements = incident['incident_key'].split(' ')
-      incident['entity'] = partitioned_elements[2]
+      if partitioned_elements[1] == "sfo2" || partitioned_elements[1] == "iad1"
+        incident['source'] = "#{partitioned_elements[0]} #{partitioned_elements[1]}"
+        incident['incident_key'] = partitioned_elements[2]
+      else
+        incident['source'] = partitioned_elements[0]
+        incident['incident_key'] = partitioned_elements[1]
+      end
       last_count = partitioned_elements.count.to_i - 3
       last_count = last_count < 1 ? last_count = 1 : last_count
       incident['check'] = partitioned_elements.last(last_count).join(' ')
     end
-#    if !incident['check'] && incident['entity'] != ""
-#      puts incident['entity']
-#      # We'll assume that all entities with / in the name are Sensu
-#      if incident['entity'].include? "/"
-#        incident['entity'], incident['check'] = incident['entity'].split('/')
-#      elsif incident['entity'].downcase.include? "nagios"
-#        # The last string is the check name in Nagios checks
-#        partitioned_elements = incident['entity'].split(' ')
-#        incident['entity'] = partitioned_elements[2]
-#        last_count = partitioned_elements.count.to_i - 3
-#        last_count = last_count < 1 ? last_count = 1 : last_count
-#        incident['check'] = partitioned_elements.last(last_count).join(' ')
-#      end
-#    end
+
+    if incident['incident_key'].to_s.include? "/"
+      incident['entity'], incident['check'] = incident['incident_key'].split('/', 2)
+    end
+
+    if incident['incident_key'].to_s.include? ":"
+      incident['entity'], incident['check'] = incident['incident_key'].split(':', 2)
+    end
+
     if !incident['entity']
       incident['entity'] = incident['incident_key']
     end
@@ -54,9 +53,9 @@ def parse_incidents(incidents)
     case incident['time_to_ack']
       when 'N/A'
         incident['time_to_ack_unit'] = ''
-      when 1; 
+      when 1;
         incident['time_to_ack_unit'] = 'minute'
-      else 
+      else
         incident['time_to_ack_unit'] = 'minutes'
     end
     incident['time_to_resolve'] = 'N/A' if incident['time_to_resolve'] == 0
@@ -85,6 +84,10 @@ get '/' do
   @stat_summary = influxdb.generate_stats
   @pagerduty_url = pagerduty.pagerduty_url
   @acked, @unacked = influxdb.unaddressed_alerts
+  pp @acked.inspect
+  pp @unacked.inspect
+  @acked = parse_incidents(@acked)
+  @unacked = parse_incidents(@unacked)
   haml :index
 end
 
@@ -127,8 +130,7 @@ get '/categorisation/:start_date/:end_date' do
   @end_date      = params["end_date"]
   @search        = params["search"]
   @pagerduty_url = pagerduty.pagerduty_url
-  @incidents     = influxdb.find_incidents(@start_date, @end_date, {:conditions => search_precondition })
-  @incidents     = parse_incidents(@incidents)
+  @incidents     = parse_incidents(influxdb.find_incidents(@start_date, @end_date, {:conditions => search_precondition }))
   haml :categorisation
 end
 
@@ -136,7 +138,7 @@ get '/alert-frequency/:start_date/:end_date' do
   @start_date = params['start_date']
   @end_date   = params['end_date']
   @search     = params['search']
-  @incidents  = influxdb.incident_frequency(@start_date, @end_date, search_precondition)
+  @incidents  = parse_incidents(influxdb.incident_frequency(@start_date, @end_date, search_precondition))
   @total      = @incidents.map { |x| x['count'] }.inject(:+) || 0
   @series     = HighCharts.alert_frequency(@incidents)
   haml :"alert-frequency"
@@ -161,7 +163,7 @@ get '/noise-candidates/:start_date/:end_date' do
   @start_date = params['start_date']
   @end_date   = params['end_date']
   @search     = params['search']
-  @incidents  = influxdb.noise_candidates(@start_date, @end_date, search_precondition)
+  @incidents  = parse_incidents(influxdb.noise_candidates(@start_date, @end_date, search_precondition))
   @total      = @incidents.count
   @series     = HighCharts.noise_candidates(@incidents)
   haml :"noise-candidates"

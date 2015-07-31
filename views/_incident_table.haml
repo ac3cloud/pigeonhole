@@ -6,6 +6,8 @@
           Time of alert
         %th#alert_id.col-md-1
           ID
+        %th#alert_id.col-md-1
+          Source
         %th#entity.col-md-3
           Entity
         %th#check.col-md-2
@@ -24,6 +26,7 @@
           %td= Time.at(incident['alert_time'])
           %td
             %a{:href => "#{@pagerduty_url}/incidents/#{incident['id']}"}= incident['id']
+          %td= incident['input_type']
           %td= incident['entity']
           %td= incident['check']
           - unless locals[:no_ack]

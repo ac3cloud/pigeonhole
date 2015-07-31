@@ -100,21 +100,9 @@ module Influx
       return [] if incidents.empty?
       incidents.map do |incident|
         next if incident['incident_key'].nil?
-        entity, check = incident['incident_key'].split(':', 2)
-        if !check
-          if incident['input_type'].downcase.include? "sensu"
-            entity, check = entity.split('/')
-          elsif incident['input_type'].downcase.include? "nagios"
-            # The last string is the check name in Nagios checks
-            partitioned_elements = entity.rpartition(' ')
-            entity = "#{partitioned_elements[2]}"
-            check = partitioned_elements.last
-          end
-        end
         {
           'count'       => incident['count'],
-          'entity'      => entity,
-          'check'       => check,
+          'incident_key'    => incident['incident_key'].to_s.strip,
           'input_type'  => incident['input_type']
         }
       end.compact
@@ -159,7 +147,7 @@ module Influx
 
       unless group_by.nil?
         aggregated = find_incidents(start_date, end_date,
-                                    :query_select => "select mean(time_to_ack) as mean_ack, 
+                                    :query_select => "select mean(time_to_ack) as mean_ack,
                                                       mean(time_to_resolve) as mean_resolve, input_type",
                                     :conditions => "group by time(#{group_by}), input_type #{precondition}"
                     )
@@ -193,20 +181,9 @@ module Influx
       incidents.map do |incident|
         next if incident['incident_key'].nil?
         entity, check = incident['incident_key'].split(':', 2)
-        if !check
-          if incident['input_type'].downcase.include? "sensu"
-            entity, check = entity.split('/')
-          elsif incident['input_type'].downcase.include? "nagios"
-            # The last string is the check name in Nagios checks
-            partitioned_elements = entity.rpartition(' ')
-            entity = "#{partitioned_elements[2]}"
-            check = partitioned_elements.last
-          end
-        end
         {
           'count'                 => incident['count'],
-          'entity'                => entity,
-          'check'                 => check,
+          'incident_key'          => incident['incident_key'].to_s.strip,
           'mean_time_to_resolve'  => incident['mean'].to_i,
           'input_type'            => incident['input_type']
         }
@@ -273,12 +250,12 @@ module Influx
       incidents = incidents.map do |incident|
         entity, check = incident['incident_key'].split(':', 2)
         {
-          'alert_time' => incident['time'],
-          'id' => incident['id'],
-          'entity' => entity,
-          'check'  => check,
-          'ack_by' => incident['acknowledge_by'] || 'N/A',
-          'time_to_ack' => incident['time_to_ack']
+          'alert_time'    => incident['time'],
+          'id'            => incident['id'],
+          'incident_key'  => incident['incident_key'].to_s.strip,
+          'input_type'    => incident['input_type'],
+          'ack_by'        => incident['acknowledge_by'] || 'N/A',
+          'time_to_ack'   => incident['time_to_ack']
         }
       end
       acked, unacked = incidents.partition { |x| x['time_to_ack'] }

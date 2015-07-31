@@ -22,10 +22,10 @@
       %tr
         %th#alert_time.col-md-2
           Time of alert
-        %th#source.col-md-2
-          Source
         %th#alert_id.col-md-1
           ID
+        %th#source.col-md-2
+          Source
         %th#entity.col-md-3
           Entity
         %th#check.col-md-2
@@ -33,16 +33,16 @@
         %th#ack_by.col-md-1
           Acknowledged by
         %th#ack.col-md-1
-          Time to Acknowledge
+          Time to Ack
         %th#resolve.col-md-1
           Time to Resolve
     %tbody
       - @incidents.each do |incident|
         %tr
           %td= Time.at(incident['alert_time'])
-          %td= incident['input_type']
           %td
             %a{:href => "#{@pagerduty_url}/incidents/#{incident['id']}"}= incident['id']
+          %td= incident['input_type']
           %td= incident['entity']
           %td= incident['check']
           %td= incident['ack_by']

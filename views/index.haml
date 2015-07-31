@@ -1,41 +1,5 @@
 %div{:class => "today"}
 
-%form{:action => '', :method => 'post', :role => 'form', :class => 'form', :id => 'incidents'}
-  %table#incidents-table.table.table-hover.table-striped.table-bordered.table-condensed.tablesorter
-    %thead
-      %tr
-        %th#id
-          \#
-        %th#incident
-          Incident
-        %th#source
-          Source
-        %th#description
-          Description
-        %th#time
-          Time
-        %th#category
-          Category
-    %tbody
-      - @incidents.each_with_index do |incident, index|
-        - id = incident['id']
-        %tr
-          %td= index + 1
-          %td= incident['input_type']
-          %td
-            %a{:href => "#{@pagerduty_url}/incidents/#{id}"}= id
-          %td= incident['description']
-          %td
-            %abbr{:class => "timeago", :title => "#{Time.at(incident['time'])}"} 
-              "#{Time.at(incident['time'])}"
-          %td
-            %select{:name => id, :id => id, :class => "form-control"}
-              -@categories.each do |category|
-                - display_name = category == "self recovered" ? "recovered without intervention" : category
-                - if incident['category'] && category == incident['category']
-                  %option{:value => category, :selected => true}= display_name
-                - else
-                  %option{:value => category}= display_name
   %h3 Aggregated statistics
   - @stat_summary[0..2].each do |b|
     = haml :'_stats_table', :locals => { :stats => b}
