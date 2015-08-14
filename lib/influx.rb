@@ -37,7 +37,7 @@ module Influx
       oldest = incidents.map { |x| Time.parse(x[:created_on]).to_i }.min - 1
       newest = incidents.map { |x| Time.parse(x[:created_on]).to_i }.max + 1
       begin
-        entries = @influxdb.query "select id, time_to_resolve from #{timeseries}\
+        entries = @influxdb.query "select id, time_to_resolve from #{timeseries}
                                    where time > #{oldest}s and time < #{newest}s"
         entries = entries.empty? ? [] : entries[timeseries]
       rescue InfluxDB::Error => e
@@ -85,7 +85,7 @@ module Influx
       if query_input && query_input[:query_select]
         query_select = query_input[:query_select]
       end
-      influx_query = "#{query_select} from #{timeseries} \
+      influx_query = "#{query_select} from #{timeseries}
                       where time > #{start_date}s and time < #{end_date}s "
       influx_query << query_input[:conditions] if query_input && query_input[:conditions]
       incidents = @influxdb.query(influx_query)
@@ -148,7 +148,7 @@ module Influx
 
       unless group_by.nil?
         aggregated = find_incidents(start_date, end_date,
-                                    :query_select => 'select mean(time_to_ack) as mean_ack,\
+                                    :query_select => 'select mean(time_to_ack) as mean_ack,
                                                       mean(time_to_resolve) as mean_resolve',
                                     :conditions => "group by time(#{group_by}) #{precondition}"
                                    )
@@ -194,8 +194,8 @@ module Influx
 
     def threshold_recommendations(opts)
       data = find_incidents(opts[:start_date], opts[:end_date],
-                            :query_select => "select count(incident_key),\
-                                              percentile(time_to_resolve, #{opts[:percentage]}),\
+                            :query_select => "select count(incident_key),
+                                              percentile(time_to_resolve, #{opts[:percentage]}),
                                               max(time_to_resolve)",
                             :conditions => 'group by incident_key'
                            )
@@ -301,7 +301,7 @@ module Influx
       stat_matrix.flatten!
 
       aggregate_select_str = 'select count(incident_key), ' + %w(ack resolve).map do |type|
-        "MEAN(time_to_#{type}) as #{type}_mean, STDDEV(time_to_#{type}) as #{type}_stddev,\
+        "MEAN(time_to_#{type}) as #{type}_mean, STDDEV(time_to_#{type}) as #{type}_stddev,
          PERCENTILE(time_to_#{type}, 95) as #{type}_95_percentile"
       end.join(', ')
 

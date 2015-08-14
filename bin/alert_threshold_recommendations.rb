@@ -29,11 +29,11 @@ main do
   recommendations.each do |r|
     fixed += r[:fixed]
     total += r[:count]
-    puts "#{r[:incident_key]}: #{r[:fixed]} out of #{r[:count]} alerts would not have been\
-          generated with a threshold of #{r[:formatted_threshold]}"
+    puts "#{r[:incident_key]}: #{r[:fixed]} out of #{r[:count]} alerts would not have been " +
+          "generated with a threshold of #{r[:formatted_threshold]}"
   end
-  puts "Total: #{fixed} out of #{total} alerts would not have been generated over\
-          #{incident_key_total} incident_keys"
+  puts "Total: #{fixed} out of #{total} alerts would not have been generated over " +
+          "#{incident_key_total} incident_keys"
 end
 
 use_log_level_option
