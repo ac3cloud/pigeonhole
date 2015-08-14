@@ -10,6 +10,7 @@ require 'highcharts'
 require 'uri'
 require 'pagerduty'
 require 'methadone'
+require 'version'
 
 include Methadone::CLILogging
 
