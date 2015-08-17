@@ -29,11 +29,11 @@ main do
   recommendations.each do |r|
     fixed += r[:fixed]
     total += r[:count]
-    puts "#{r[:incident_key]}: #{r[:fixed]} out of #{r[:count]} alerts would not have been\
-          generated with a threshold of #{r[:formatted_threshold]}"
+    puts "#{r[:incident_key]}: #{r[:fixed]} out of #{r[:count]} alerts would not have been " +
+          "generated with a threshold of #{r[:formatted_threshold]}"
   end
-  puts "Total: #{fixed} out of #{total} alerts would not have been generated over\
-          #{incident_key_total} incident_keys"
+  puts "Total: #{fixed} out of #{total} alerts would not have been generated over " +
+          "#{incident_key_total} incident_keys"
 end
 
 use_log_level_option
@@ -41,9 +41,10 @@ use_log_level_option
 description 'Calculates suggested alert thresholds for removing X% of alerts over a given time period'
 
 on('-p percent', '--percent-to-remove', 'The percent of alerts to remove')
-on('-t duration', '--time-period', 'The amount of time we should look over')
+on('-t duration', '--time-period', 'The amount of time we should look over (e.g. "24 hours", "20 minutes")')
 on('-m more-than', '--more-than', 'Only return results that have more than Y occurences')
-on('-r recover-within', '--recover-within', 'Only return results that recover within this amount of time')
+on('-r recover-within', '--recover-within',
+   'Only return results that recover within this amount of time (e.g. "24 hours", "20 minutes")')
 on('-s sort-by', '--sort-by', 'The field we should sort the returned data by - frequency, threshold, or incident_key')
 
 go!
