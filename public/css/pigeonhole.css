@@ -84,3 +84,8 @@ form#incidents th#category {
 .stats_table table td {
   padding: 5px;
 }
+.version, .version:link, .home_list:visited, .version:hover, .version:active {
+  color: #666;
+  font: 10pt 'Arial' normal;
+  text-decoration: none;
+} 

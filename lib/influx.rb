@@ -36,7 +36,7 @@ module Influx
       oldest = incidents.map { |x| Time.parse(x[:created_on]).to_i }.min - 1
       newest = incidents.map { |x| Time.parse(x[:created_on]).to_i }.max + 1
       begin
-        entries = @influxdb.query "select id, time_to_resolve from #{timeseries}\
+        entries = @influxdb.query "select id, time_to_resolve from #{timeseries}
                                    where time > #{oldest}s and time < #{newest}s"
         entries = entries.empty? ? [] : entries[timeseries]
       rescue InfluxDB::Error => e
@@ -84,7 +84,7 @@ module Influx
       if query_input && query_input[:query_select]
         query_select = query_input[:query_select]
       end
-      influx_query = "#{query_select} from #{timeseries} \
+      influx_query = "#{query_select} from #{timeseries}
                       where time > #{start_date}s and time < #{end_date}s "
       influx_query << query_input[:conditions] if query_input && query_input[:conditions]
       incidents = @influxdb.query(influx_query)
@@ -101,9 +101,9 @@ module Influx
       incidents.map do |incident|
         next if incident['incident_key'].nil?
         {
-          'count'       => incident['count'],
-          'incident_key'    => incident['incident_key'].to_s.strip,
-          'input_type'  => incident['input_type']
+          'count'        => incident['count'],
+          'incident_key' => incident['incident_key'].to_s.strip,
+          'input_type'   => incident['input_type']
         }
       end.compact
     end
@@ -119,6 +119,7 @@ module Influx
           'id'              => incident['id'],
           'alert_time'      => incident['time'],
           'incident_key'    => incident['incident_key'].to_s.strip,
+          'description'     => incident['description'],
           'ack_by'          => incident['acknowledge_by'],
           'time_to_ack'     => time_to_ack,
           'time_to_resolve' => time_to_resolve,
@@ -150,7 +151,7 @@ module Influx
                                     :query_select => "select mean(time_to_ack) as mean_ack,
                                                       mean(time_to_resolve) as mean_resolve, input_type",
                                     :conditions => "group by time(#{group_by}), input_type #{precondition}"
-                    )
+                                    )
         aggregated.each do |incident|
           incident['mean_ack'] = incident['mean_ack'].nil? ? 0 : (incident['mean_ack'] / 60.0).ceil
           incident['mean_resolve'] = incident['mean_resolve'].nil? ? 0 : (incident['mean_resolve'] / 60.0).ceil
@@ -173,7 +174,7 @@ module Influx
 
     def noise_candidates(start_date = nil, end_date = nil, precondition = '')
       query_input = {
-        :query_select => "select count(incident_key), incident_key, mean(time_to_resolve), input_type",
+        :query_select => "select count(incident_key), incident_key, mean(time_to_resolve), description, input_type",
         :conditions => "#{precondition} and time_to_resolve < 120 group by incident_key, input_type"
       }
       incidents = find_incidents(start_date, end_date, query_input).sort_by { |k| k['count'] }.reverse
@@ -184,6 +185,7 @@ module Influx
         {
           'count'                 => incident['count'],
           'incident_key'          => incident['incident_key'].to_s.strip,
+          'description'           => incident['description'],
           'mean_time_to_resolve'  => incident['mean'].to_i,
           'input_type'            => incident['input_type']
         }
@@ -192,10 +194,11 @@ module Influx
 
     def threshold_recommendations(opts)
       data = find_incidents(opts[:start_date], opts[:end_date],
-                            :query_select => "select count(incident_key), percentile(time_to_resolve, #{opts[:percentage]}),\
+                            :query_select => "select count(incident_key),
+                                              percentile(time_to_resolve, #{opts[:percentage]}),
                                               max(time_to_resolve), input_type",
                             :conditions => "group by incident_key, input_type"
-             )
+                            )
       # Firstly, don't try to provide analysis for data where we have less than 5 instances of it
       # Also remove alerts that don't have an incident key, or haven't been resolved yet.
       recover_within = ChronicDuration.parse(opts[:recover_within]).to_i
@@ -253,6 +256,7 @@ module Influx
           'alert_time'    => incident['time'],
           'id'            => incident['id'],
           'incident_key'  => incident['incident_key'].to_s.strip,
+          'description'   => incident['description'],
           'input_type'    => incident['input_type'],
           'ack_by'        => incident['acknowledge_by'] || 'N/A',
           'time_to_ack'   => incident['time_to_ack']
@@ -298,7 +302,7 @@ module Influx
       stat_matrix.flatten!
 
       aggregate_select_str = 'select count(incident_key), ' + %w(ack resolve).map do |type|
-        "MEAN(time_to_#{type}) as #{type}_mean, STDDEV(time_to_#{type}) as #{type}_stddev,\
+        "MEAN(time_to_#{type}) as #{type}_mean, STDDEV(time_to_#{type}) as #{type}_stddev,
          PERCENTILE(time_to_#{type}, 95) as #{type}_95_percentile"
       end.join(', ')
 

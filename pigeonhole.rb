@@ -10,7 +10,7 @@ require 'highcharts'
 require 'uri'
 require 'pagerduty'
 require 'methadone'
-require 'pp'
+require 'version'
 
 include Methadone::CLILogging
 
@@ -22,10 +22,23 @@ def today
 end
 
 def parse_incidents(incidents)
+  puts incidents.length
   incidents.each do |incident|
-    if incident['incident_key'].start_with? "nagios" or incident['incident_key'].start_with? "sensu"
+    if incident['input_type'].include? "Zabbix"
+      if !incident['incident_key'].start_with? "sensu"
+        if incident['description']
+          incident['incident_key'] = incident['description'].match(/.*\s([a-zA-Z0-9-]*).*/)[1]
+          incident['check'] = incident['description']
+        end
+      end
+    end
+
+    if incident['incident_key'] and (incident['incident_key'].start_with? "nagios" or incident['incident_key'].start_with? "sensu")
       partitioned_elements = incident['incident_key'].split(' ')
       if partitioned_elements[1] == "sfo2" || partitioned_elements[1] == "iad1"
+        incident['source'] = "#{partitioned_elements[0]} #{partitioned_elements[1]}"
+        incident['incident_key'] = partitioned_elements[2]
+      elsif !partitioned_elements[1].include?('-')
         incident['source'] = "#{partitioned_elements[0]} #{partitioned_elements[1]}"
         incident['incident_key'] = partitioned_elements[2]
       else
@@ -84,8 +97,6 @@ get '/' do
   @stat_summary = influxdb.generate_stats
   @pagerduty_url = pagerduty.pagerduty_url
   @acked, @unacked = influxdb.unaddressed_alerts
-  pp @acked.inspect
-  pp @unacked.inspect
   @acked = parse_incidents(@acked)
   @unacked = parse_incidents(@unacked)
   haml :index
