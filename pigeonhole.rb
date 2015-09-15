@@ -34,7 +34,6 @@ def parse_incidents(incidents)
 
     if incident['input_type'].include? "Cloudwatch"
       if incident['description']
-        puts incident.inspect()
         incident['check'] = incident['description']
       end
     end
