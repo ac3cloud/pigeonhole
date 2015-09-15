@@ -22,7 +22,6 @@ def today
 end
 
 def parse_incidents(incidents)
-  puts incidents.length
   incidents.each do |incident|
     if incident['input_type'].include? "Zabbix"
       if !incident['incident_key'].start_with? "sensu"
@@ -30,6 +29,13 @@ def parse_incidents(incidents)
           incident['incident_key'] = incident['description'].match(/.*\s([a-zA-Z0-9-]*).*/)[1]
           incident['check'] = incident['description']
         end
+      end
+    end
+
+    if incident['input_type'].include? "Cloudwatch"
+      if incident['description']
+        puts incident.inspect()
+        incident['check'] = incident['description']
       end
     end
 
