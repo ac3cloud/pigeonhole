@@ -30,7 +30,7 @@
           %td= incident['entity']
           %td= incident['check']
           - unless locals[:no_ack]
-            %td= incident['ack_by']
+            %td= incident['acknowledge_by']
             %td= incident['time_to_ack']
           - unless locals[:no_resolve]
             %td= incident['time_to_resolve']

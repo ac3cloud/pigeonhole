@@ -23,8 +23,12 @@
           Incident
         %th#source
           Source
-        %th#description
-          Description
+        %th#entity
+          Entity
+        %th#check
+          Check
+        %th#ack_by.col-md-1
+          Acknowledged by
         %th#category
           Category
     %tbody
@@ -36,7 +40,9 @@
           %td
             %a{:href => "#{@pagerduty_url}/incidents/#{id}"}= id
           %td= incident['input_type']
-          %td= incident['description']
+          %td= incident['entity']
+          %td= incident['check']
+          %td= incident['acknowledge_by']
           %td
             %select{:name => id, :id => id, :class => "form-control"}
               -@categories.each do |category|

@@ -119,8 +119,10 @@ module Influx
           'id'              => incident['id'],
           'alert_time'      => incident['time'],
           'incident_key'    => incident['incident_key'].to_s.strip,
+          'entity'          => incident['entity'],
+          'check'           => incident['check'],
           'description'     => incident['description'],
-          'ack_by'          => incident['acknowledge_by'],
+          'acknowledge_by'  => incident['acknowledge_by'],
           'time_to_ack'     => time_to_ack,
           'time_to_resolve' => time_to_resolve,
           'input_type'      => incident['input_type']
@@ -174,18 +176,18 @@ module Influx
 
     def noise_candidates(start_date = nil, end_date = nil, precondition = '')
       query_input = {
-        :query_select => "select count(incident_key), incident_key, mean(time_to_resolve), description, input_type",
-        :conditions => "#{precondition} and time_to_resolve < 120 group by incident_key, input_type"
+        :query_select => "select count(incident_key), incident_key, mean(time_to_resolve), description, input_type, check",
+        :conditions => "#{precondition} and time_to_resolve < 120 group by incident_key, check, input_type"
       }
       incidents = find_incidents(start_date, end_date, query_input).sort_by { |k| k['count'] }.reverse
       return [] if incidents.empty?
       incidents.map do |incident|
         next if incident['incident_key'].nil?
-        entity, check = incident['incident_key'].split(':', 2)
         {
           'count'                 => incident['count'],
           'incident_key'          => incident['incident_key'].to_s.strip,
           'description'           => incident['description'],
+          'check'                 => incident['check'],
           'mean_time_to_resolve'  => incident['mean'].to_i,
           'input_type'            => incident['input_type']
         }
@@ -253,16 +255,19 @@ module Influx
       incidents = incidents.map do |incident|
         entity, check = incident['incident_key'].split(':', 2)
         {
-          'alert_time'    => incident['time'],
-          'id'            => incident['id'],
-          'incident_key'  => incident['incident_key'].to_s.strip,
-          'description'   => incident['description'],
-          'input_type'    => incident['input_type'],
-          'ack_by'        => incident['acknowledge_by'] || 'N/A',
-          'time_to_ack'   => incident['time_to_ack']
+          'alert_time'     => incident['time'],
+          'id'             => incident['id'],
+          'incident_key'   => incident['incident_key'].to_s.strip,
+          'description'    => incident['description'],
+          'entity'         => incident['entity'],
+          'check'          => incident['check'],
+          'input_type'     => incident['input_type'],
+          'acknowledge_by' => incident['acknowledge_by'] || 'N/A',
+          'time_to_ack'    => incident['time_to_ack']
         }
       end
       acked, unacked = incidents.partition { |x| x['time_to_ack'] }
+      puts unacked.inspect()
       [acked, unacked]
     end
 

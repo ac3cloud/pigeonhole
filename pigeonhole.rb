@@ -23,50 +23,7 @@ end
 
 def parse_incidents(incidents)
   incidents.each do |incident|
-    if incident['input_type'].include? "Zabbix"
-      if !incident['incident_key'].start_with? "sensu"
-        if incident['description']
-          incident['incident_key'] = incident['description'].match(/.*\s([a-zA-Z0-9-]*).*/)[1]
-          incident['check'] = incident['description']
-        end
-      end
-    end
-
-    if incident['input_type'].include? "Cloudwatch"
-      if incident['description']
-        incident['check'] = incident['description']
-      end
-    end
-
-    if incident['incident_key'] and (incident['incident_key'].start_with? "nagios" or incident['incident_key'].start_with? "sensu")
-      partitioned_elements = incident['incident_key'].split(' ')
-      if partitioned_elements[1] == "sfo2" || partitioned_elements[1] == "iad1"
-        incident['source'] = "#{partitioned_elements[0]} #{partitioned_elements[1]}"
-        incident['incident_key'] = partitioned_elements[2]
-      elsif !partitioned_elements[1].include?('-')
-        incident['source'] = "#{partitioned_elements[0]} #{partitioned_elements[1]}"
-        incident['incident_key'] = partitioned_elements[2]
-      else
-        incident['source'] = partitioned_elements[0]
-        incident['incident_key'] = partitioned_elements[1]
-      end
-      last_count = partitioned_elements.count.to_i - 3
-      last_count = last_count < 1 ? last_count = 1 : last_count
-      incident['check'] = partitioned_elements.last(last_count).join(' ')
-    end
-
-    if incident['incident_key'].to_s.include? "/"
-      incident['entity'], incident['check'] = incident['incident_key'].split('/', 2)
-    end
-
-    if incident['incident_key'].to_s.include? ":"
-      incident['entity'], incident['check'] = incident['incident_key'].split(':', 2)
-    end
-
-    if !incident['entity']
-      incident['entity'] = incident['incident_key']
-    end
-    incident['ack_by'] = 'N/A' if incident['ack_by'].nil?
+    incident['acknowledge_by'] = 'N/A' if incident['acknowledge_by'].nil?
     incident['time_to_ack'] = 'N/A' if incident['time_to_ack'] == 0
     case incident['time_to_ack']
       when 'N/A'
@@ -180,6 +137,7 @@ get '/noise-candidates/:start_date/:end_date' do
   @end_date   = params['end_date']
   @search     = params['search']
   @incidents  = parse_incidents(influxdb.noise_candidates(@start_date, @end_date, search_precondition))
+  puts @incidents.inspect()
   @total      = @incidents.count
   @series     = HighCharts.noise_candidates(@incidents)
   haml :"noise-candidates"
