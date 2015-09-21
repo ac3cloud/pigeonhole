@@ -2,6 +2,8 @@ require "pp"
 
 class Parse
   def incidents(incidents)
+    data_centers = ["sfo2", "iad1", "linode"]
+
     incidents.each do |incident|
       if incident[:input_type].include? "Zabbix"
         if !incident[:incident_key].start_with? "sensu"
@@ -19,7 +21,7 @@ class Parse
       end
 
       # SignalFX Unique ID regex
-      if incident[:description].match(/.*\[([a-zA-Z0-9]{11})\]/)
+      if incident[:description].match(/.*\[([a-zA-Z0-9-]{11})\]/)
         incident[:check]  = incident[:description].match(/(.*)\((.*for.*)\)/)[1]
         incident[:entity] = incident[:description].match(/(.*)\((.*for.*)\)/)[2]
       end
@@ -31,7 +33,7 @@ class Parse
 
       if incident[:incident_key] and (incident[:incident_key].start_with? "nagios" or incident[:incident_key].start_with? "sensu")
         partitioned_elements = incident[:incident_key].split(' ')
-        if partitioned_elements[1] == "sfo2" || partitioned_elements[1] == "iad1"
+        if data_centers.include?(partitioned_elements[1])
           incident[:source] = "#{partitioned_elements[0]} #{partitioned_elements[1]}"
           incident[:entity] = partitioned_elements[2]
         elsif !partitioned_elements[1].include?('-')

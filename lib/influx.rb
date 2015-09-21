@@ -253,7 +253,6 @@ module Influx
       # FIXME: this reject should be done at the time of querying InfluxDB.
       incidents.reject! { |incident| incident['incident_key'].nil? || incident['time_to_resolve'] }
       incidents = incidents.map do |incident|
-        entity, check = incident['incident_key'].split(':', 2)
         {
           'alert_time'     => incident['time'],
           'id'             => incident['id'],
