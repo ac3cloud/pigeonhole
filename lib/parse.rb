@@ -26,7 +26,7 @@ class Parse
         incident[:entity] = incident[:description].match(/(.*)\((.*for.*)\)/)[2]
       end
 
-      if incident[:input_type].include? "Operations Email"
+      if incident[:input_type].include? "Operations Email" or incident[:input_type].include? "Operations Dynect"
         incident[:entity] = incident[:incident_key].match(/(.*)service\s(.*)/)[1]
         incident[:check]  = incident[:incident_key].match(/(.*)service\s(.*)/)[2]
       end

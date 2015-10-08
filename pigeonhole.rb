@@ -143,6 +143,13 @@ get '/noise-candidates/:start_date/:end_date' do
   haml :"noise-candidates"
 end
 
+get '/history/:client/:check' do
+  @client = params['client']
+  @check = params['check']
+  @incidents  = influxdb.get_history(@client, @check)
+  haml :"alert-history"
+end
+
 post '/categorisation/:start_date/:end_date' do
   uri = "#{params['start_date']}/#{params['end_date']}"
   uri += "?search=#{params['search']}" if params['search']

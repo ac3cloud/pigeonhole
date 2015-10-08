@@ -91,6 +91,21 @@ module Influx
       incidents[timeseries] ? incidents[timeseries] : []
     end
 
+    def get_history(client = nill, check = nil, query_input = nil)
+      timeseries = @config['series']
+
+      # As a default, select * from the timeframe.  Otherwise, use what the input query gave us
+      query_select = 'select *'
+      if query_input && query_input[:query_select]
+        query_select = query_input[:query_select]
+      end
+      influx_query = "#{query_select} from #{timeseries}
+                      where entity = '#{client}' and check = '#{check}'"
+      influx_query << query_input[:conditions] if query_input && query_input[:conditions]
+      incidents = @influxdb.query(influx_query)
+      incidents[timeseries] ? incidents[timeseries] : []
+    end
+
     def incident_frequency(start_date = nil, end_date = nil, precondition = '')
       query_input = {
         :query_select => "select count(incident_key), incident_key, input_type",
