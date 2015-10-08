@@ -137,7 +137,6 @@ get '/noise-candidates/:start_date/:end_date' do
   @end_date   = params['end_date']
   @search     = params['search']
   @incidents  = parse_incidents(influxdb.noise_candidates(@start_date, @end_date, search_precondition))
-  puts @incidents.inspect()
   @total      = @incidents.count
   @series     = HighCharts.noise_candidates(@incidents)
   haml :"noise-candidates"

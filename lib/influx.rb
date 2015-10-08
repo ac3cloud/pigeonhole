@@ -108,8 +108,8 @@ module Influx
 
     def incident_frequency(start_date = nil, end_date = nil, precondition = '')
       query_input = {
-        :query_select => "select count(incident_key), incident_key, input_type",
-        :conditions => "#{precondition} group by incident_key, input_type"
+        :query_select => "select count(incident_key), incident_key, input_type, entity, check",
+        :conditions => "#{precondition} group by incident_key, entity, check, input_type"
       }
       incidents = find_incidents(start_date, end_date, query_input).sort_by { |k| k['count'] }.reverse
       return [] if incidents.empty?
@@ -118,6 +118,8 @@ module Influx
         {
           'count'        => incident['count'],
           'incident_key' => incident['incident_key'].to_s.strip,
+          'entity'       => incident['entity'],
+          'check'        => incident['check'],
           'input_type'   => incident['input_type']
         }
       end.compact
@@ -191,8 +193,8 @@ module Influx
 
     def noise_candidates(start_date = nil, end_date = nil, precondition = '')
       query_input = {
-        :query_select => "select count(incident_key), incident_key, mean(time_to_resolve), description, input_type, check",
-        :conditions => "#{precondition} and time_to_resolve < 120 group by incident_key, check, input_type"
+        :query_select => "select count(incident_key), incident_key, mean(time_to_resolve), description, input_type, check, entity",
+        :conditions => "#{precondition} and time_to_resolve < 120 group by incident_key, check, entity, input_type"
       }
       incidents = find_incidents(start_date, end_date, query_input).sort_by { |k| k['count'] }.reverse
       return [] if incidents.empty?
@@ -202,6 +204,7 @@ module Influx
           'count'                 => incident['count'],
           'incident_key'          => incident['incident_key'].to_s.strip,
           'description'           => incident['description'],
+          'entity'                => incident['entity'],
           'check'                 => incident['check'],
           'mean_time_to_resolve'  => incident['mean'].to_i,
           'input_type'            => incident['input_type']
@@ -281,7 +284,6 @@ module Influx
         }
       end
       acked, unacked = incidents.partition { |x| x['time_to_ack'] }
-      puts unacked.inspect()
       [acked, unacked]
     end
 

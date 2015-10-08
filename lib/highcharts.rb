@@ -3,7 +3,7 @@ require 'json'
 module HighCharts
   def self.alert_frequency(incidents)
     incidents.map do |incident|
-      name = incident['entity'].gsub(/.bulletproof.net$/, '')
+      name = incident['entity']
       # Truncate long check names by removing everything after and including the second -
       name << ":#{incident['check'].gsub(/-.+(-.+)/, '')}" unless incident['check'].nil?
       {
@@ -15,9 +15,9 @@ module HighCharts
 
   def self.noise_candidates(incidents)
     incidents.map do |incident|
-      name = incident['entity']
+      name = incident['check']
       # Truncate long check names by removing everything after and including the second -
-      name << ":#{incident['check'].gsub(/-.+(-.+)/, '')}" unless incident['check'].nil?
+      name << ":#{incident['check']}" unless incident['check'].nil?
       {
         :name => name,
         :data => [incident['count']]
