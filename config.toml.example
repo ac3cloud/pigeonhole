@@ -1,3 +1,6 @@
+[pigeonhole]
+  domain   = "http://base_domain"
+
 [influxdb]
   host     = "1.2.3.4"
   port     = 8086

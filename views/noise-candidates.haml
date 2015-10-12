@@ -35,8 +35,10 @@
         %tr
           %td= incident['count']
           %td= incident['input_type']
-          %td= incident['entity']
-          %td= incident['check']
+          %td
+            %a{:href => "#{@pigeonhole_domain}/history/#{incident['entity']}/all"}= incident['entity']
+          %td
+            %a{:href => "#{@pigeonhole_domain}/history/all/#{incident['check']}"}=incident['check']
           %td= incident['mean_time_to_resolve']
 
 %script{:src => "https://code.highcharts.com/highcharts.js"}

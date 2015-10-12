@@ -17,8 +17,18 @@ include Methadone::CLILogging
 influxdb = Influx::Db.new
 pagerduty = Pagerduty.new
 
+@config     = TOML.load_file('config.toml')['pigeonhole']
+raise 'Could not load credentials file at config.toml' if @config.nil? || @config.empty?
+@pigeonhole_domain    = @config['domain']
+
 def today
   Time.now.strftime('%Y-%m-%d')
+end
+
+def last_week
+  now = Date.today
+  last_week = (now - 7)
+  last_week.strftime('%Y-%m-%d')
 end
 
 def parse_incidents(incidents)
@@ -65,19 +75,19 @@ get '/' do
 end
 
 get '/categorisation/?' do
-  redirect "/categorisation/#{today}/#{today}"
+  redirect "/categorisation/#{last_week}/#{today}"
 end
 
 get '/alert-frequency/?' do
-  redirect "/alert-frequency/#{today}/#{today}"
+  redirect "/alert-frequency/#{last_week}/#{today}"
 end
 
 get '/alert-response/?' do
-  redirect "/alert-response/#{today}/#{today}"
+  redirect "/alert-response/#{last_week}/#{today}"
 end
 
 get '/noise-candidates/?' do
-  redirect "/noise-candidates/#{today}/#{today}"
+  redirect "/noise-candidates/#{last_week}/#{today}"
 end
 
 get '/status' do

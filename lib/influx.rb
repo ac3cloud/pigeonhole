@@ -91,17 +91,29 @@ module Influx
       incidents[timeseries] ? incidents[timeseries] : []
     end
 
-    def get_history(client = nill, check = nil, query_input = nil)
+    def get_history(client = nil, check = nil, query_input = nil)
       timeseries = @config['series']
-
+      if client == "all"
+        client = nil
+      end
+      if check == "all"
+        check = nil
+      end
       # As a default, select * from the timeframe.  Otherwise, use what the input query gave us
       query_select = 'select *'
       if query_input && query_input[:query_select]
         query_select = query_input[:query_select]
       end
-      influx_query = "#{query_select} from #{timeseries}
-                      where entity = '#{client}' and check = '#{check}'"
+      influx_query = "#{query_select} from #{timeseries}"
+      if client and check
+        influx_query = "#{influx_query} where entity = '#{client}' and check = '#{check}'"
+      elsif client and !check
+        influx_query = "#{influx_query} where entity = '#{client}'"
+      elsif !client and check
+        influx_query = "#{influx_query} where check = '#{check}'"
+      end
       influx_query << query_input[:conditions] if query_input && query_input[:conditions]
+      puts influx_query
       incidents = @influxdb.query(influx_query)
       incidents[timeseries] ? incidents[timeseries] : []
     end

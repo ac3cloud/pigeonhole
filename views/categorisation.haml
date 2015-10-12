@@ -40,8 +40,10 @@
           %td
             %a{:href => "#{@pagerduty_url}/incidents/#{id}"}= id
           %td= incident['input_type']
-          %td= incident['entity']
-          %td= incident['check']
+          %td
+            %a{:href => "#{@pigeonhole_domain}/history/#{incident['entity']}/all"}= incident['entity']
+          %td
+            %a{:href => "#{@pigeonhole_domain}/history/all/#{incident['check']}"}=incident['check']
           %td= incident['acknowledge_by']
           %td
             %select{:name => id, :id => id, :class => "form-control"}
