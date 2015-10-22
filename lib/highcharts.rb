@@ -5,7 +5,6 @@ module HighCharts
     incidents.map do |incident|
       name = incident['entity']
       # Truncate long check names by removing everything after and including the second -
-      name << ":#{incident['check'].gsub(/-.+(-.+)/, '')}" unless incident['check'].nil?
       {
         :name => name,
         :data => [incident['count']]
@@ -17,7 +16,6 @@ module HighCharts
     incidents.map do |incident|
       name = incident['check']
       # Truncate long check names by removing everything after and including the second -
-      name << ":#{incident['check']}" unless incident['check'].nil?
       {
         :name => name,
         :data => [incident['count']]

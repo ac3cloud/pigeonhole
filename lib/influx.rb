@@ -113,7 +113,6 @@ module Influx
         influx_query = "#{influx_query} where check = '#{check}'"
       end
       influx_query << query_input[:conditions] if query_input && query_input[:conditions]
-      puts influx_query
       incidents = @influxdb.query(influx_query)
       incidents[timeseries] ? incidents[timeseries] : []
     end
