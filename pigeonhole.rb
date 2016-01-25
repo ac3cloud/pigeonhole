@@ -91,7 +91,12 @@ get '/noise-candidates/?' do
 end
 
 get '/status' do
-  status 200
+  begin
+    influxdb.healthcheck
+    status 200
+  rescue
+    status 503
+  end
   body ''
 end
 

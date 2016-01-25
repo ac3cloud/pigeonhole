@@ -15,7 +15,8 @@ module Influx
         :host           => @config['host'],
         :username       => @config['username'],
         :password       => @config['password'],
-        :port           => @config['port']
+        :port           => @config['port'],
+        :retry          => @config['retry']
       }
       credentials_rw = {
         :username       => @config['username_rw'],
@@ -272,6 +273,10 @@ module Influx
           :formatted_threshold => formatted_threshold
         }
       end
+    end
+
+    def healthcheck
+      @influxdb.query "select * from #{@config['database']} limit 1"
     end
 
     def unaddressed_alerts

@@ -8,6 +8,7 @@
   series   = "pigeonhole"
   username = "pigeonhole"
   password = "mypassword"
+  retry    = 3
 
   # Special read-write user for data alteration
   username_rw = "pigeonhole_rw"
