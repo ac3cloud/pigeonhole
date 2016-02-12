@@ -102,7 +102,7 @@ end
 
 def search_precondition
   return '' unless @search
-  "and incident_key =~ /.*#{@search}.*/i"
+  "and (input_type =~ /.*#{@search}.*/i or description =~ /.*#{@search}.*/i or incident_key =~ /.*#{@search}.*/i or check =~ /.*#{@search}.*/i or entity =~ /.*#{@search}.*/i)"
 end
 
 get '/categorisation/:start_date/:end_date' do
