@@ -16,7 +16,6 @@ include Methadone::CLILogging
 
 influxdb = Influx::Db.new
 pagerduty = Pagerduty.new
-
 @config     = TOML.load_file('config.toml')['pigeonhole']
 raise 'Could not load credentials file at config.toml' if @config.nil? || @config.empty?
 @pigeonhole_domain    = @config['domain']
@@ -74,6 +73,8 @@ get '/' do
   haml :index
 end
 
+
+
 get '/categorisation/?' do
   redirect "/categorisation/#{last_week}/#{today}"
 end
@@ -127,6 +128,7 @@ get '/alert-frequency/:start_date/:end_date' do
   @end_date   = params['end_date']
   @search     = params['search']
   @incidents  = parse_incidents(influxdb.incident_frequency(@start_date, @end_date, search_precondition))
+  @pagerduty_url = pagerduty.pagerduty_url
   @total      = @incidents.map { |x| x['count'] }.inject(:+) || 0
   @series     = HighCharts.alert_frequency(@incidents)
   haml :"alert-frequency"
@@ -152,6 +154,7 @@ get '/noise-candidates/:start_date/:end_date' do
   @end_date   = params['end_date']
   @search     = params['search']
   @incidents  = parse_incidents(influxdb.noise_candidates(@start_date, @end_date, search_precondition))
+  @pagerduty_url = pagerduty.pagerduty_url
   @total      = @incidents.count
   @series     = HighCharts.noise_candidates(@incidents)
   haml :"noise-candidates"
@@ -161,6 +164,7 @@ get '/history/:client/:check' do
   @client = params['client']
   @check = params['check']
   @incidents  = influxdb.get_history(@client, @check)
+  @pagerduty_url = pagerduty.pagerduty_url
   haml :"alert-history"
 end
 
