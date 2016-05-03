@@ -137,6 +137,23 @@ module Influx
       end.compact
     end
 
+    def check_frequency(start_date = nil, end_date = nil, precondition = '')
+      query_input = {
+        :query_select => "select count(incident_key), incident_key, input_type, check",
+        :conditions => "#{precondition} group by check, input_type"
+      }
+      incidents = find_incidents(start_date, end_date, query_input).sort_by { |k| k['count'] }.reverse
+      return [] if incidents.empty?
+      incidents.map do |incident|
+        next if incident['check'].nil?
+        {
+          'count'        => incident['count'],
+          'check'        => incident['check'],
+          'input_type'   => incident['input_type']
+        }
+      end.compact
+    end
+
     def alert_response(start_date = nil, end_date = nil, precondition = '')
       incidents = find_incidents(start_date, end_date, :conditions => precondition)
       return {} if incidents.empty?

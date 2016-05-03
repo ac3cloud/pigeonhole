@@ -83,6 +83,10 @@ get '/alert-frequency/?' do
   redirect "/alert-frequency/#{last_week}/#{today}"
 end
 
+get '/check-frequency/?' do
+  redirect "/check_frequency/#{last_week}/#{today}"
+end
+
 get '/alert-response/?' do
   redirect "/alert-response/#{last_week}/#{today}"
 end
@@ -132,6 +136,17 @@ get '/alert-frequency/:start_date/:end_date' do
   @total      = @incidents.map { |x| x['count'] }.inject(:+) || 0
   @series     = HighCharts.alert_frequency(@incidents)
   haml :"alert-frequency"
+end
+
+get '/check-frequency/:start_date/:end_date' do
+  @start_date = params['start_date']
+  @end_date   = params['end_date']
+  @search     = params['search']
+  @incidents  = parse_incidents(influxdb.check_frequency(@start_date, @end_date, search_precondition))
+  @pagerduty_url = pagerduty.pagerduty_url
+  @total      = @incidents.map { |x| x['count'] }.inject(:+) || 0
+  @series     = HighCharts.alert_frequency(@incidents)
+  haml :"check-frequency"
 end
 
 get '/alert-response/:start_date/:end_date' do
