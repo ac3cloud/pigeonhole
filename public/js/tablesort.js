@@ -59,7 +59,11 @@ $(function() {
 
       // add custom filter functions using this option
       // see the filter widget custom demo for more specifics on how to use this option
-      filter_functions : null,
+      filter_functions : {
+        1 : function(e, n, f, i, $r, c, data) {
+          return e === f;
+        }
+      },
 
       // hide filter row when table is empty
       filter_hideEmpty : true,
