@@ -41,8 +41,7 @@
             %a{:href => "#{@pigeonhole_domain}/history/all/#{incident['check']}"}= incident['check']
           %td= incident['mean_time_to_resolve']
 
-%script{:src => "/js/d3.v3.min.js"}
-
+%script{:src => "/js/highcharts.js"}
 :javascript
 
   var margin = {top: 20, right: 20, bottom: 30, left: 40},
