@@ -7,6 +7,7 @@ require 'influx'
 require 'tilt/haml'
 require 'date'
 require 'highcharts'
+require 'd3'
 require 'uri'
 require 'pagerduty'
 require 'methadone'
@@ -171,7 +172,8 @@ get '/noise-candidates/:start_date/:end_date' do
   @incidents  = parse_incidents(influxdb.noise_candidates(@start_date, @end_date, search_precondition))
   @pagerduty_url = pagerduty.pagerduty_url
   @total      = @incidents.count
-  @series     = HighCharts.noise_candidates(@incidents)
+  #@series     = HighCharts.noise_candidates(@incidents)
+  @series     = D3.noise_candidates(@incidents)
   haml :"noise-candidates"
 end
 
