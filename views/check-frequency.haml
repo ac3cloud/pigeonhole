@@ -34,7 +34,7 @@
           %td
             %a{:href => "#{@pigeonhole_domain}/history/all/#{incident['check']}"}=incident['check']
 
-%script{:src => "https://code.highcharts.com/highcharts.js"}
+%script{:src => "/js/highcharts.js"}
 :javascript
   $(function () {
     var data = #{@series}

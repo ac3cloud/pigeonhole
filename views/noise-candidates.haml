@@ -41,7 +41,7 @@
             %a{:href => "#{@pigeonhole_domain}/history/all/#{incident['check']}"}= incident['check']
           %td= incident['mean_time_to_resolve']
 
-%script{:src => "https://code.highcharts.com/highcharts.js"}
+%script{:src => "/js/highcharts.js"}
 :javascript
   $(function () {
     var data = #{@series}
