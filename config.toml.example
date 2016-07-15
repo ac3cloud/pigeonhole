@@ -1,3 +1,6 @@
+[pigeonhole]
+  domain   = "http://base_domain"
+
 [influxdb]
   host     = "1.2.3.4"
   port     = 8086
@@ -5,6 +8,7 @@
   series   = "pigeonhole"
   username = "pigeonhole"
   password = "mypassword"
+  retry    = 3
 
   # Special read-write user for data alteration
   username_rw = "pigeonhole_rw"

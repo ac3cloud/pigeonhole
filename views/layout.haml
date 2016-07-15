@@ -4,17 +4,24 @@
     %meta{:charset => "utf-8"}
     %meta{:name => "viewport", :content => "width=device-width, initial-scale=1"}
     %title Pigeonhole
+    %link{:href => "/favicon.ico", :rel => "shortcut icon"}/
     %link{:href => "/css/bootstrap.min.css", :rel=>"stylesheet"}
     %link{:href => "/css/font-awesome.min.css", :rel=>"stylesheet"}
     %link{:href => "/css/tablesort.css", :rel=>"stylesheet"}
     %link{:href => "/css/pigeonhole.css", :rel=>"stylesheet"}
-    %link{:href => "/css/jquery-ui.css", :rel=>"stylesheet"}
-    %script{:src => "/js/jquery-1.11.1.min.js"}
-    %script{:src => "/js/jquery-ui.js"}
+    %link{:href => "/css/jquery-ui.min.css", :rel=>"stylesheet"}
+    %link{:href => "/css/nv.d3.css", :rel=>"stylesheet"}
+    %script{:src => "/js/jquery-2.1.4.min.js"}
+    %script{:src => "/js/jquery-ui.min.js"}
     %script{:src => "/js/jquery.tablesorter.min.js"}
     %script{:src => "/js/jquery.tablesorter.widgets.js"}
+    %script{:src => "/js/jquery.timeago.js"}
     %script{:src => "/js/tablesort.js"}
+    %script{:src => "/js/d3.v3.min.js"}
+    %script{:src => "/js/nv.d3.min.js"}
+
     %script{:src => "/js/pigeonhole.js"}
+    %script{:src => "/js/bootstrap.min.js"}
   %body
     %nav{:class => 'navbar navbar-default datenav', :role => 'navigation'}
       %div.navbar-inner
@@ -23,7 +30,6 @@
           %div.navbar-header
             %span.navbar-brand
               %a{:href=>"/", :class => "home_link"} Pigeonhole
-              %a{:href=>"https://github.com/bulletproofnetworks/pigeonhole/releases/tag/v#{VERSION}", :class=> "version"} #{VERSION}
 
           - q = @search ? "?search=#{@search}" : ""
           %div.nav.navbar-nav
@@ -32,6 +38,8 @@
             %li
               %a{:href=>"/alert-frequency/#{@start_date}/#{@end_date}#{q}"} Alert Frequency
             %li
+              %a{:href=>"/check-frequency/#{@start_date}/#{@end_date}#{q}"} Check Frequency
+            %li
               %a{:href=>"/alert-response/#{@start_date}/#{@end_date}#{q}"} Alert Response
             %li
               %a{:href=>"/noise-candidates/#{@start_date}/#{@end_date}#{q}"} Alert Noise Candidates
@@ -39,16 +47,14 @@
           - unless request.path_info == '/'
             %div.navbar-form.navbar-right
               #searchcontrol.form-group
-                %label{:for => "search"} Search
-                %input{:type => "text", :id => "search", :class => "form-control navform_search", :value => "#{@search}" }
+                %input{:type => "text", :id => "search", :class => "form-control navform_search", :placeholder => "Search", :value => "#{@search}" }
               #startcontrol.form-group.date-select
                 %label{:for => "start_date"} From
-                %input{:type => "date", :id => "start_date", :class => "form-control navform_date", :value => "#{@start_date}" }
+                %input{:id => "start_date", :class => "form-control navform_date", :value => "#{@start_date}" }
               #endcontrol.form-group.date-select
                 %label{:for => "end_date"} to
-                %input{:type => "date", :id => "end_date", :class => "form-control navform_date", :value => "#{@end_date}" }
+                %input{:id => "end_date", :class => "form-control navform_date", :value => "#{@end_date}" }
               %div.form-group
-                %input{:type => "button", :id => "reload", :class => "btn btn-success", :value => "load" }
-
+                %input{:type => "button", :id => "reload", :class => "btn btn-success", :value => "Load" }
     %div.container
       = yield

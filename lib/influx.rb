@@ -16,7 +16,7 @@ module Influx
         :username       => @config['username'],
         :password       => @config['password'],
         :port           => @config['port'],
-        :time_precision => 's'
+        :retry          => @config['retry']
       }
       credentials_rw = {
         :username       => @config['username_rw'],
@@ -92,20 +92,64 @@ module Influx
       incidents[timeseries] ? incidents[timeseries] : []
     end
 
+    def get_history(client = nil, check = nil, query_input = nil)
+      timeseries = @config['series']
+      if client == "all"
+        client = nil
+      end
+      if check == "all"
+        check = nil
+      end
+      # As a default, select * from the timeframe.  Otherwise, use what the input query gave us
+      query_select = 'select *'
+      if query_input && query_input[:query_select]
+        query_select = query_input[:query_select]
+      end
+      influx_query = "#{query_select} from #{timeseries}"
+      if client and check
+        influx_query = "#{influx_query} where entity = '#{client}' and check = '#{check}'"
+      elsif client and !check
+        influx_query = "#{influx_query} where entity = '#{client}'"
+      elsif !client and check
+        influx_query = "#{influx_query} where check = '#{check}'"
+      end
+      influx_query << query_input[:conditions] if query_input && query_input[:conditions]
+      incidents = @influxdb.query(influx_query)
+      incidents[timeseries] ? incidents[timeseries] : []
+    end
+
     def incident_frequency(start_date = nil, end_date = nil, precondition = '')
       query_input = {
-        :query_select => 'select count(incident_key), incident_key',
-        :conditions => "#{precondition} group by incident_key"
+        :query_select => "select count(incident_key), incident_key, input_type, entity, check",
+        :conditions => "#{precondition} group by incident_key, entity, check, input_type"
       }
       incidents = find_incidents(start_date, end_date, query_input).sort_by { |k| k['count'] }.reverse
       return [] if incidents.empty?
       incidents.map do |incident|
         next if incident['incident_key'].nil?
-        entity, check = incident['incident_key'].split(':', 2)
         {
-          'count'  => incident['count'],
-          'entity' => entity,
-          'check'  => check
+          'count'        => incident['count'],
+          'incident_key' => incident['incident_key'].to_s.strip,
+          'entity'       => incident['entity'],
+          'check'        => incident['check'],
+          'input_type'   => incident['input_type']
+        }
+      end.compact
+    end
+
+    def check_frequency(start_date = nil, end_date = nil, precondition = '')
+      query_input = {
+        :query_select => "select count(incident_key), incident_key, input_type, check",
+        :conditions => "#{precondition} group by check, input_type"
+      }
+      incidents = find_incidents(start_date, end_date, query_input).sort_by { |k| k['count'] }.reverse
+      return [] if incidents.empty?
+      incidents.map do |incident|
+        next if incident['check'].nil?
+        {
+          'count'        => incident['count'],
+          'check'        => incident['check'],
+          'input_type'   => incident['input_type']
         }
       end.compact
     end
@@ -121,9 +165,13 @@ module Influx
           'id'              => incident['id'],
           'alert_time'      => incident['time'],
           'incident_key'    => incident['incident_key'].to_s.strip,
-          'ack_by'          => incident['acknowledge_by'],
+          'entity'          => incident['entity'],
+          'check'           => incident['check'],
+          'description'     => incident['description'],
+          'acknowledge_by'  => incident['acknowledge_by'],
           'time_to_ack'     => time_to_ack,
-          'time_to_resolve' => time_to_resolve
+          'time_to_resolve' => time_to_resolve,
+          'input_type'      => incident['input_type']
         }
       end.compact
 
@@ -148,10 +196,10 @@ module Influx
 
       unless group_by.nil?
         aggregated = find_incidents(start_date, end_date,
-                                    :query_select => 'select mean(time_to_ack) as mean_ack,
-                                                      mean(time_to_resolve) as mean_resolve',
-                                    :conditions => "group by time(#{group_by}) #{precondition}"
-                                   )
+                                    :query_select => "select mean(time_to_ack) as mean_ack,
+                                                      mean(time_to_resolve) as mean_resolve, input_type",
+                                    :conditions => "#{precondition} group by time(#{group_by}), input_type"
+                                    )
         aggregated.each do |incident|
           incident['mean_ack'] = incident['mean_ack'].nil? ? 0 : (incident['mean_ack'] / 60.0).ceil
           incident['mean_resolve'] = incident['mean_resolve'].nil? ? 0 : (incident['mean_resolve'] / 60.0).ceil
@@ -161,10 +209,9 @@ module Influx
       # However, we always want to do the count over at least one hour (or matching the aggregation above)
       count_group_by = group_by.nil? ? '1h' : group_by
       count = find_incidents(start_date, end_date,
-                             :query_select => 'select count(incident_key)',
-                             :conditions => "group by time(#{count_group_by}), fill(0) #{precondition}"
-                            ).sort_by { |k| k['count'] }.reverse
-
+                             :query_select => "select count(incident_key)",
+                             :conditions => "#{precondition} group by time(#{count_group_by}), fill(0), input_type"
+                            ).sort_by { |k| k["count"] }.reverse
       {
         :incidents      => results,
         :aggregated     => aggregated,
@@ -175,19 +222,21 @@ module Influx
 
     def noise_candidates(start_date = nil, end_date = nil, precondition = '')
       query_input = {
-        :query_select => 'select count(incident_key), incident_key, mean(time_to_resolve)',
-        :conditions => "#{precondition} and time_to_resolve < 120 group by incident_key"
+        :query_select => "select count(incident_key), incident_key, mean(time_to_resolve), description, input_type, check, entity",
+        :conditions => "#{precondition} and time_to_resolve < 120 group by incident_key, check, entity, input_type"
       }
       incidents = find_incidents(start_date, end_date, query_input).sort_by { |k| k['count'] }.reverse
       return [] if incidents.empty?
       incidents.map do |incident|
         next if incident['incident_key'].nil?
-        entity, check = incident['incident_key'].split(':', 2)
         {
-          'count'  => incident['count'],
-          'entity' => entity,
-          'check'  => check,
-          'mean_time_to_resolve' => incident['mean'].to_i
+          'count'                 => incident['count'],
+          'incident_key'          => incident['incident_key'].to_s.strip,
+          'description'           => incident['description'],
+          'entity'                => incident['entity'],
+          'check'                 => incident['check'],
+          'mean_time_to_resolve'  => incident['mean'].to_i,
+          'input_type'            => incident['input_type']
         }
       end.compact
     end
@@ -196,9 +245,9 @@ module Influx
       data = find_incidents(opts[:start_date], opts[:end_date],
                             :query_select => "select count(incident_key),
                                               percentile(time_to_resolve, #{opts[:percentage]}),
-                                              max(time_to_resolve)",
-                            :conditions => 'group by incident_key'
-                           )
+                                              max(time_to_resolve), input_type",
+                            :conditions => "group by incident_key, input_type"
+                            )
       # Firstly, don't try to provide analysis for data where we have less than 5 instances of it
       # Also remove alerts that don't have an incident key, or haven't been resolved yet.
       recover_within = ChronicDuration.parse(opts[:recover_within]).to_i
@@ -243,6 +292,10 @@ module Influx
       end
     end
 
+    def healthcheck
+      @influxdb.query "select * from #{@config['database']} limit 1"
+    end
+
     def unaddressed_alerts
       start_date = Date.today.prev_day.strftime('%F')
       end_date = Date.today.strftime('%F')
@@ -251,14 +304,16 @@ module Influx
       # FIXME: this reject should be done at the time of querying InfluxDB.
       incidents.reject! { |incident| incident['incident_key'].nil? || incident['time_to_resolve'] }
       incidents = incidents.map do |incident|
-        entity, check = incident['incident_key'].split(':', 2)
         {
-          'alert_time' => incident['time'],
-          'id' => incident['id'],
-          'entity' => entity,
-          'check'  => check,
-          'ack_by' => incident['acknowledge_by'] || 'N/A',
-          'time_to_ack' => incident['time_to_ack']
+          'alert_time'     => incident['time'],
+          'id'             => incident['id'],
+          'incident_key'   => incident['incident_key'].to_s.strip,
+          'description'    => incident['description'],
+          'entity'         => incident['entity'],
+          'check'          => incident['check'],
+          'input_type'     => incident['input_type'],
+          'acknowledge_by' => incident['acknowledge_by'] || 'N/A',
+          'time_to_ack'    => incident['time_to_ack']
         }
       end
       acked, unacked = incidents.partition { |x| x['time_to_ack'] }

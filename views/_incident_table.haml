@@ -6,6 +6,8 @@
           Time of alert
         %th#alert_id.col-md-1
           ID
+        %th#alert_id.col-md-1.filter-select
+          Source
         %th#entity.col-md-3
           Entity
         %th#check.col-md-2
@@ -24,10 +26,13 @@
           %td= Time.at(incident['alert_time'])
           %td
             %a{:href => "#{@pagerduty_url}/incidents/#{incident['id']}"}= incident['id']
-          %td= incident['entity']
-          %td= incident['check']
+          %td= incident['input_type']
+          %td
+            %a{:href => "#{@pigeonhole_domain}/history/#{incident['entity']}/all"}= incident['entity']
+          %td
+            %a{:href => "#{@pigeonhole_domain}/history/all/#{incident['check']}"}=incident['check']
           - unless locals[:no_ack]
-            %td= incident['ack_by']
+            %td= incident['acknowledge_by']
             %td= incident['time_to_ack']
           - unless locals[:no_resolve]
             %td= incident['time_to_resolve']

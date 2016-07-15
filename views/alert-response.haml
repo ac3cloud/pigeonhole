@@ -12,7 +12,8 @@
     matching term
     = '"'+@search+'"'
 
-%div{:id => 'ackresolutionchart'}
+%div{:id => 'chart'}
+  %svg
 
 %form{:action => '', :method => 'post', :role => 'form', :class => 'form', :id => 'ackresolution'}
   %h3
@@ -24,6 +25,8 @@
           Time of alert
         %th#alert_id.col-md-1
           ID
+        %th#source.col-md-2.filter-select
+          Source
         %th#entity.col-md-3
           Entity
         %th#check.col-md-2
@@ -31,7 +34,7 @@
         %th#ack_by.col-md-1
           Acknowledged by
         %th#ack.col-md-1
-          Time to Acknowledge
+          Time to Ack
         %th#resolve.col-md-1
           Time to Resolve
     %tbody
@@ -40,58 +43,41 @@
           %td= Time.at(incident['alert_time'])
           %td
             %a{:href => "#{@pagerduty_url}/incidents/#{incident['id']}"}= incident['id']
-          %td= incident['entity']
-          %td= incident['check']
-          %td= incident['ack_by']
-          %td= case incident['time_to_ack']; when 'N/A'; incident['time_to_ack']; when 1; "#{incident['time_to_ack']} minute"; else; "#{incident['time_to_ack']} minutes"; end
-          %td= case incident['time_to_resolve']; when 'N/A'; incident['time_to_resolve']; when 1; "#{incident['time_to_resolve']} minute"; else; "#{incident['time_to_resolve']} minutes"; end
+          %td= incident['input_type']
+          %td
+            %a{:href => "#{@pigeonhole_domain}/history/#{incident['entity']}/all"}= incident['entity']
+          %td
+            %a{:href => "#{@pigeonhole_domain}/history/all/#{incident['check']}"}=incident['check']
+          %td= incident['acknowledge_by']
+          %td= "#{incident['time_to_ack']} #{incident['time_to_ack_unit']}"
+          %td= "#{incident['time_to_resolve']} #{incident['time_to_resolve_unit']}"
 
-%script{:src => "https://code.highcharts.com/highcharts.js"}
-%script{:src => "https://code.highcharts.com/highcharts-more.js"}
 :javascript
-  Highcharts.setOptions({
-    global: {
-      useUTC: false
-    }
-  });
-  $(function () {
-    var data = #{@series}
-    $('#ackresolutionchart').highcharts({
-      chart: {
-        zoomType: 'x'
-      },
-      yAxis: [{
-        min: 0,
-        opposite: true,
-        title: {
-          text: 'Number of alerts per time block'
-        }
-      }, {
-        min: 0,
-        title: {
-          text: 'Time (min) to acknowledge or resolve alert'
-        }
-      }],
-      xAxis: {
-          type: 'datetime',
-          title: {
-              text: 'Time of alert'
-          }
-      },
-      credits: {
-          enabled: false
-      },
-      title: {
-          text: ''
-      },
-      plotOptions: {
-        series: {
-          compare: 'value'
-        }
-      },
-      tooltip: {
-          shared: true,
-      },
-      series: data
-    });
+:javascript
+  var series = #{@series}
+  nv.addGraph(function() {
+    var chart = nv.models.cumulativeLineChart()
+      .x(function(d) { return d[0] })
+      //adjusting, 100% is 1.00, not 100 as it is in the data
+      .y(function(d) { return d[1] })
+      .color(d3.scale.category10().range())
+      .useInteractiveGuideline(true)
+      ;
+
+    chart.xAxis
+      .tickFormat(function(d) {
+        return d3.time.format('%x')(new Date(d))
+      });
+
+    //chart.yAxis.tickFormat(d3.format(',.1%'));
+
+    d3.select('#chart svg')
+      .datum(series)
+      .transition().duration(500)
+      .call(chart)
+      ;
+
+    nv.utils.windowResize(chart.update);
+
+    return chart;
   });

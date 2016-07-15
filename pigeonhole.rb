@@ -4,9 +4,10 @@ $LOAD_PATH.push(File.expand_path(File.join(__FILE__, '..', 'lib')))
 
 require 'sinatra'
 require 'influx'
-require 'haml'
+require 'tilt/haml'
 require 'date'
 require 'highcharts'
+require 'd3'
 require 'uri'
 require 'pagerduty'
 require 'methadone'
@@ -16,9 +17,43 @@ include Methadone::CLILogging
 
 influxdb = Influx::Db.new
 pagerduty = Pagerduty.new
+@config     = TOML.load_file('config.toml')['pigeonhole']
+raise 'Could not load credentials file at config.toml' if @config.nil? || @config.empty?
+@pigeonhole_domain    = @config['domain']
 
 def today
   Time.now.strftime('%Y-%m-%d')
+end
+
+def last_week
+  now = Date.today
+  last_week = (now - 7)
+  last_week.strftime('%Y-%m-%d')
+end
+
+def parse_incidents(incidents)
+  incidents.each do |incident|
+    incident['acknowledge_by'] = 'N/A' if incident['acknowledge_by'].nil?
+    incident['time_to_ack'] = 'N/A' if incident['time_to_ack'] == 0
+    case incident['time_to_ack']
+      when 'N/A'
+        incident['time_to_ack_unit'] = ''
+      when 1;
+        incident['time_to_ack_unit'] = 'minute'
+      else
+        incident['time_to_ack_unit'] = 'minutes'
+    end
+    incident['time_to_resolve'] = 'N/A' if incident['time_to_resolve'] == 0
+    case incident['time_to_resolve']
+      when 'N/A'
+        incident['time_to_resolve_unit'] = ''
+      when 1
+        incident['time_to_resolve_unit'] = 'minute'
+      else
+        incident['time_to_resolve_unit'] = 'minutes'
+    end
+
+  end
 end
 
 get '/' do
@@ -34,28 +69,46 @@ get '/' do
   @stat_summary = influxdb.generate_stats
   @pagerduty_url = pagerduty.pagerduty_url
   @acked, @unacked = influxdb.unaddressed_alerts
+  @acked = parse_incidents(@acked)
+  @unacked = parse_incidents(@unacked)
   haml :index
 end
 
+
+
 get '/categorisation/?' do
-  redirect "/categorisation/#{today}/#{today}"
+  redirect "/categorisation/#{last_week}/#{today}"
 end
 
 get '/alert-frequency/?' do
-  redirect "/alert-frequency/#{today}/#{today}"
+  redirect "/alert-frequency/#{last_week}/#{today}"
+end
+
+get '/check-frequency/?' do
+  redirect "/check_frequency/#{last_week}/#{today}"
 end
 
 get '/alert-response/?' do
-  redirect "/alert-response/#{today}/#{today}"
+  redirect "/alert-response/#{last_week}/#{today}"
 end
 
 get '/noise-candidates/?' do
-  redirect "/noise-candidates/#{today}/#{today}"
+  redirect "/noise-candidates/#{last_week}/#{today}"
+end
+
+get '/status' do
+  begin
+    influxdb.healthcheck
+    status 200
+  rescue
+    status 503
+  end
+  body ''
 end
 
 def search_precondition
   return '' unless @search
-  "and incident_key =~ /.*#{@search}.*/i"
+  "and (input_type =~ /.*#{@search}.*/i or description =~ /.*#{@search}.*/i or incident_key =~ /.*#{@search}.*/i or check =~ /.*#{@search}.*/i or entity =~ /.*#{@search}.*/i)"
 end
 
 get '/categorisation/:start_date/:end_date' do
@@ -67,11 +120,11 @@ get '/categorisation/:start_date/:end_date' do
     'needs documentation',
     'unclear, needs discussion'
   ]
-  @start_date = params['start_date']
-  @end_date   = params['end_date']
-  @search     = params['search']
+  @start_date    = params["start_date"]
+  @end_date      = params["end_date"]
+  @search        = params["search"]
   @pagerduty_url = pagerduty.pagerduty_url
-  @incidents = influxdb.find_incidents(@start_date, @end_date, :conditions => search_precondition)
+  @incidents     = parse_incidents(influxdb.find_incidents(@start_date, @end_date, {:conditions => search_precondition }))
   haml :categorisation
 end
 
@@ -79,10 +132,23 @@ get '/alert-frequency/:start_date/:end_date' do
   @start_date = params['start_date']
   @end_date   = params['end_date']
   @search     = params['search']
-  @incidents  = influxdb.incident_frequency(@start_date, @end_date, search_precondition)
+  @incidents  = parse_incidents(influxdb.incident_frequency(@start_date, @end_date, search_precondition))
+  @pagerduty_url = pagerduty.pagerduty_url
   @total      = @incidents.map { |x| x['count'] }.inject(:+) || 0
-  @series     = HighCharts.alert_frequency(@incidents)
+  #@series     = HighCharts.alert_frequency(@incidents)
+  @series     = D3.alert_frequency(@incidents)
   haml :"alert-frequency"
+end
+
+get '/check-frequency/:start_date/:end_date' do
+  @start_date = params['start_date']
+  @end_date   = params['end_date']
+  @search     = params['search']
+  @incidents  = parse_incidents(influxdb.check_frequency(@start_date, @end_date, search_precondition))
+  @pagerduty_url = pagerduty.pagerduty_url
+  @total      = @incidents.map { |x| x['count'] }.inject(:+) || 0
+  @series     = D3.alert_frequency(@incidents)
+  haml :"check-frequency"
 end
 
 get '/alert-response/:start_date/:end_date' do
@@ -90,18 +156,13 @@ get '/alert-response/:start_date/:end_date' do
   @end_date   = params['end_date']
   @search     = params['search']
   resp = influxdb.alert_response(@start_date, @end_date, search_precondition)
-  @series     = HighCharts.alert_response(resp)
+  @series     = D3.alert_response(resp)
   # Build table data
   @incidents  = resp[:incidents] || []
   @total      = @incidents.count
   @acked      = @incidents.count { |x| x['time_to_ack'] != 0 }
   @pagerduty_url = pagerduty.pagerduty_url
-  @incidents.each do |incident|
-    incident['entity'], incident['check'] = incident['incident_key'].split(':', 2)
-    incident['ack_by'] = 'N/A' if incident['ack_by'].nil?
-    incident['time_to_ack'] = 'N/A' if incident['time_to_ack'] == 0
-    incident['time_to_resolve'] = 'N/A' if incident['time_to_resolve'] == 0
-  end
+  @incidents = parse_incidents(@incidents)
   haml :"alert-response"
 end
 
@@ -109,9 +170,20 @@ get '/noise-candidates/:start_date/:end_date' do
   @start_date = params['start_date']
   @end_date   = params['end_date']
   @search     = params['search']
-  @incidents  = influxdb.noise_candidates(@start_date, @end_date, search_precondition)
+  @incidents  = parse_incidents(influxdb.noise_candidates(@start_date, @end_date, search_precondition))
+  @pagerduty_url = pagerduty.pagerduty_url
   @total      = @incidents.count
+  #@series     = HighCharts.noise_candidates(@incidents)
+  @series     = D3.noise_candidates(@incidents)
   haml :"noise-candidates"
+end
+
+get '/history/:client/:check' do
+  @client = params['client']
+  @check = params['check']
+  @incidents  = influxdb.get_history(@client, @check)
+  @pagerduty_url = pagerduty.pagerduty_url
+  haml :"alert-history"
 end
 
 post '/categorisation/:start_date/:end_date' do

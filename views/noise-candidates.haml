@@ -12,6 +12,9 @@
     matching term
     = '"'+@search+'"'
 
+%div{:id => 'chart'}
+  %svg
+
 %form{:action => '', :method => 'post', :role => 'form', :class => 'form', :id => 'noise-candidates'}
   %h3
     Alert list (total: #{@total})
@@ -20,6 +23,8 @@
       %tr
         %th#count
           Count
+        %th#source.filter-select
+          Source
         %th#entity
           Entity
         %th#check
@@ -30,6 +35,31 @@
       - @incidents.each do |incident|
         %tr
           %td= incident['count']
-          %td= incident['entity']
-          %td= incident['check']
+          %td= incident['input_type']
+          %td
+            %a{:href => "#{@pigeonhole_domain}/history/#{incident['entity']}/all"}= incident['entity']
+          %td
+            %a{:href => "#{@pigeonhole_domain}/history/all/#{incident['check']}"}= incident['check']
           %td= incident['mean_time_to_resolve']
+
+:javascript
+  nv.addGraph(function() {
+    var series = [{key: "Candidates",
+                  values: #{@series} } ]
+
+    var chart = nv.models.discreteBarChart()
+      .x(function(d) { return d.name })
+      .y(function(d) { return d.data })
+      .showValues(false)
+      .showXAxis(false);
+
+    chart.tooltip.enabled()
+
+    d3.select('#chart svg')
+        .datum(series)
+        .call(chart);
+
+    nv.utils.windowResize(chart.update);
+
+    return chart;
+  });
