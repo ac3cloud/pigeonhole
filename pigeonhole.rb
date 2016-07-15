@@ -135,7 +135,8 @@ get '/alert-frequency/:start_date/:end_date' do
   @incidents  = parse_incidents(influxdb.incident_frequency(@start_date, @end_date, search_precondition))
   @pagerduty_url = pagerduty.pagerduty_url
   @total      = @incidents.map { |x| x['count'] }.inject(:+) || 0
-  @series     = HighCharts.alert_frequency(@incidents)
+  #@series     = HighCharts.alert_frequency(@incidents)
+  @series     = D3.alert_frequency(@incidents)
   haml :"alert-frequency"
 end
 
@@ -146,7 +147,7 @@ get '/check-frequency/:start_date/:end_date' do
   @incidents  = parse_incidents(influxdb.check_frequency(@start_date, @end_date, search_precondition))
   @pagerduty_url = pagerduty.pagerduty_url
   @total      = @incidents.map { |x| x['count'] }.inject(:+) || 0
-  @series     = HighCharts.alert_frequency(@incidents)
+  @series     = D3.alert_frequency(@incidents)
   haml :"check-frequency"
 end
 
@@ -155,7 +156,7 @@ get '/alert-response/:start_date/:end_date' do
   @end_date   = params['end_date']
   @search     = params['search']
   resp = influxdb.alert_response(@start_date, @end_date, search_precondition)
-  @series     = HighCharts.alert_response(resp)
+  @series     = D3.alert_response(resp)
   # Build table data
   @incidents  = resp[:incidents] || []
   @total      = @incidents.count

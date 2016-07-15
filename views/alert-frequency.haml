@@ -12,7 +12,8 @@
     matching term
     = '"'+@search+'"'
 
-%div{:id => 'breakdownchart'}
+%div{:id => 'chart'}
+  %svg
 
 %form{:action => '', :method => 'post', :role => 'form', :class => 'form', :id => 'breakdown'}
   %h3
@@ -38,42 +39,24 @@
           %td
             %a{:href => "#{@pigeonhole_domain}/history/all/#{incident['check']}"}=incident['check']
 
-%script{:src => "/js/highcharts.js"}
 :javascript
-  $(function () {
-    var data = #{@series}
-    $('#breakdownchart').highcharts({
-      chart: {
-        type: 'column'
-      },
-      credits: {
-          enabled: false
-      },
-      title: {
-          text: 'Top 50 most frequent alerts'
-      },
-      xAxis: {
-        categories: [ 'Alerts' ]
-      },
-      yAxis: {
-          min: 0,
-          title: {
-              text: 'Number of alerts'
-          }
-      },
-      legend: {
-          enabled: false
-      },
-      plotOptions: {
-        series: {
-          groupPadding: 0,
-          dataLabels: {
-            crop:     true,
-            enabled:  false,
-            overflow: 'justify',
-          }
-        }
-      },
-      series: data
-    });
+  nv.addGraph(function() {
+    var series = [{key: "Candidates",
+                  values: #{@series} } ]
+
+    var chart = nv.models.discreteBarChart()
+      .x(function(d) { return d.name })
+      .y(function(d) { return d.data })
+      .showValues(false)
+      .showXAxis(false);
+
+    chart.tooltip.enabled()
+
+    d3.select('#chart svg')
+        .datum(series)
+        .call(chart);
+
+    nv.utils.windowResize(chart.update);
+
+    return chart;
   });

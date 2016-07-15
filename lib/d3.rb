@@ -3,24 +3,23 @@ require 'json'
 module D3
   def self.alert_frequency(incidents)
     incidents.map do |incident|
-      name = incident['entity']
-      # Truncate long check names by removing everything after and including the second -
+      name = "#{incident['input_type']} #{incident['entity']} #{incident['check']}"
       {
         :name => name,
-        :data => [incident['count']]
+        :data => incident['count']
       }
     end.slice(0, 50).to_json
   end
 
   def self.noise_candidates(incidents)
     incidents.map do |incident|
-      name = incident['check']
+      name = "#{incident['input_type']} #{incident['entity']} #{incident['check']}"
       # Truncate long check names by removing everything after and including the second -
       {
         :name => name,
-        :data => [incident['count']]
+        :data => incident['count']
       }
-    end.slice(0, 5).to_json
+    end.slice(0, 50).to_json
   end
 
   def self.alert_response(opts)
@@ -53,23 +52,14 @@ module D3
 
     [
       {
-        :name => "Number of alerts per #{opts[:count_group_by]}",
-        :data => count_data,
-        :dashStyle => 'shortdot'
+        :key => "Number of alerts per #{opts[:count_group_by]}",
+        :values => count_data,
       }, {
-        :name => ack_name,
-        :data => ack_data,
-        :yAxis => 1,
-        :tooltip => {
-          :valueSuffix => 'min'
-        }
+        :key => ack_name,
+        :values => ack_data,
       }, {
-        :name => resolve_name,
-        :data => resolve_data,
-        :yAxis => 1,
-        :tooltip => {
-          :valueSuffix => 'min'
-        }
+        :key => resolve_name,
+        :values => resolve_data,
       }
     ].to_json
   end
