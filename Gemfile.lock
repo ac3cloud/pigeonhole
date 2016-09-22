@@ -7,12 +7,16 @@ GEM
       minitest (~> 5.1)
       thread_safe (~> 0.3, >= 0.3.4)
       tzinfo (~> 1.1)
+    binding_of_caller (0.7.2)
+      debug_inspector (>= 0.0.1)
     bond (0.5.1)
+    byebug (9.0.5)
     chronic (0.10.2)
     chronic_duration (0.10.6)
       numerizer (~> 0.1.1)
     citrus (3.0.2)
     coderay (1.1.0)
+    debug_inspector (0.0.2)
     haml (4.0.6)
       tilt
     httparty (0.13.3)
@@ -21,6 +25,7 @@ GEM
     i18n (0.7.0)
     influxdb (0.1.8)
       json
+    interception (0.5)
     json (1.8.2)
     kgio (2.9.3)
     methadone (1.9.0)
@@ -34,6 +39,18 @@ GEM
       coderay (~> 1.1.0)
       method_source (~> 0.8.1)
       slop (~> 3.4)
+    pry-byebug (3.4.0)
+      byebug (~> 9.0)
+      pry (~> 0.10)
+    pry-doc (0.9.0)
+      pry (~> 0.9)
+      yard (~> 0.8)
+    pry-rescue (1.4.4)
+      interception (>= 0.5)
+      pry
+    pry-stack_explorer (0.4.9.2)
+      binding_of_caller (>= 0.7)
+      pry (>= 0.9.11)
     rack (1.6.0)
     rack-protection (1.5.3)
       rack
@@ -70,6 +87,7 @@ GEM
       kgio (~> 2.6)
       rack
       raindrops (~> 0.7)
+    yard (0.9.5)
 
 PLATFORMS
   ruby
@@ -85,8 +103,15 @@ DEPENDENCIES
   methadone
   parallel
   pry
+  pry-byebug
+  pry-doc
+  pry-rescue
+  pry-stack_explorer
   shotgun
   sinatra
   toml-rb
   tux
   unicorn
+
+BUNDLED WITH
+   1.12.5

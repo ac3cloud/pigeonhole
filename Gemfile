@@ -17,5 +17,9 @@ gem 'parallel'
 group :development do
   gem 'shotgun'
   gem 'tux'
-  gem 'pry'
+  gem 'pry',                :require => false
+  gem 'pry-byebug',         :require => false
+  gem 'pry-doc',            :require => false
+  gem 'pry-rescue',         :require => false
+  gem 'pry-stack_explorer', :require => false
 end
