@@ -67,8 +67,7 @@ class Pagerduty
       incident_id      = incident[:id]
       log              = request("#{pagerduty_url}/api/v1/incidents/#{incident_id}/log_entries")
                          .sort_by { |x| x['created_at'] }
-      problem          = log.find { |x| x['type'] == 'trigger' }
-      problem_time     = Time.parse(problem['created_at'])
+      problem_time    = Time.parse(log.map { |entry| entry['created_at'] }.sort.first)
       acknowledge_by   = nil
       time_to_ack      = nil
       time_to_resolve  = nil
