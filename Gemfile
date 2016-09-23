@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 # Gemfile
 source 'https://rubygems.org'
 
@@ -22,4 +23,5 @@ group :development do
   gem 'pry-doc',            :require => false
   gem 'pry-rescue',         :require => false
   gem 'pry-stack_explorer', :require => false
+  gem 'rubocop',            '> 0.37'
 end
