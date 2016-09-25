@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'httparty'
 require 'json'
 require 'toml'
@@ -40,7 +41,7 @@ class Pagerduty
   end
 
   def incidents(start_date, finish_date = nil)
-    finish_clause     = finish_date ? "&until=#{finish_date}" : ''
+    finish_clause = finish_date ? "&until=#{finish_date}" : ''
     time_zone = @config['time_zone']
     endpoint  = "#{pagerduty_url}/api/v1/incidents?since=#{start_date}#{finish_clause}&time_zone=#{time_zone}"
     response  = request(endpoint)
@@ -64,14 +65,13 @@ class Pagerduty
 
   def add_ack_resolve(incidents)
     Parallel.each(incidents, :in_threads => 20) do |incident|
-      incident_id      = incident[:id]
-      log              = request("#{pagerduty_url}/api/v1/incidents/#{incident_id}/log_entries")
-                         .sort_by { |x| x['created_at'] }
-      problem          = log.find { |x| x['type'] == 'trigger' }
-      problem_time     = Time.parse(problem['created_at'])
-      acknowledge_by   = nil
-      time_to_ack      = nil
-      time_to_resolve  = nil
+      incident_id     = incident[:id]
+      log             = request("#{pagerduty_url}/api/v1/incidents/#{incident_id}/log_entries")
+                        .sort_by { |x| x['created_at'] }
+      problem_time    = Time.parse(log.map { |entry| entry['created_at'] }.sort.first)
+      acknowledge_by  = nil
+      time_to_ack     = nil
+      time_to_resolve = nil
 
       if log.any? { |x| x['type'] == 'acknowledge' }
         acknowledge      = log.find { |x| x['type'] == 'acknowledge' }

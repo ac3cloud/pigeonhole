@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 $LOAD_PATH.push(File.expand_path(File.join(__FILE__, '..', '..', 'lib')))
 
@@ -11,6 +12,13 @@ include Methadone::Main
 include Methadone::CLILogging
 
 main do |start_date, finish_date|
+  if ENV['DEBUG']
+    require 'pry'
+    require 'pry-doc'
+    require 'pry-rescue'
+    require 'pry-byebug'
+    require 'pry-stack_explorer'
+  end
   influxdb    = Influx::Db.new
   pagerduty   = Pagerduty.new
   start_date  = start_date ? Time.parse(start_date).iso8601 : Time.parse("#{Time.now.strftime('%F')} 00:00:00").iso8601

@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 $LOAD_PATH.push(File.expand_path(File.join(__FILE__, '..', 'lib')))
 
@@ -94,13 +95,13 @@ get '/alert-response/:start_date/:end_date' do
   # Build table data
   @incidents  = resp[:incidents] || []
   @total      = @incidents.count
-  @acked      = @incidents.count { |x| x['time_to_ack'] != 0 }
+  @acked      = @incidents.count { |x| (x['time_to_ack']).nonzero? }
   @pagerduty_url = pagerduty.pagerduty_url
   @incidents.each do |incident|
     incident['entity'], incident['check'] = incident['incident_key'].split(':', 2)
     incident['ack_by'] = 'N/A' if incident['ack_by'].nil?
-    incident['time_to_ack'] = 'N/A' if incident['time_to_ack'] == 0
-    incident['time_to_resolve'] = 'N/A' if incident['time_to_resolve'] == 0
+    incident['time_to_ack'] = 'N/A' if (incident['time_to_ack']).zero?
+    incident['time_to_resolve'] = 'N/A' if (incident['time_to_resolve']).zero?
   end
   haml :"alert-response"
 end
@@ -134,7 +135,7 @@ post '/categorisation/:start_date/:end_date' do
 end
 
 post '/pagerduty' do
-  request.body.rewind  # in case someone already read it
+  request.body.rewind # in case someone already read it
   data = JSON.parse(request.body.read)
   begin
     incidents = pagerduty.incidents_from_webhook(data)

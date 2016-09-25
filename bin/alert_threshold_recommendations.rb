@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 $LOAD_PATH.push(File.expand_path(File.join(__FILE__, '..', '..', 'lib')))
 
@@ -18,9 +19,9 @@ main do
     :start_date  => "#{options[:t]} ago",
     :finish_date => 'now',
     :percentage  => options[:p],
-    :more_than  => options[:m],
+    :more_than => options[:m],
     :recover_within => options[:r],
-    :sort_by     => options[:s]
+    :sort_by => options[:s]
   }
   recommendations = influxdb.threshold_recommendations(opts)
   fixed = 0
@@ -29,11 +30,11 @@ main do
   recommendations.each do |r|
     fixed += r[:fixed]
     total += r[:count]
-    puts "#{r[:incident_key]}: #{r[:fixed]} out of #{r[:count]} alerts would not have been " +
-          "generated with a threshold of #{r[:formatted_threshold]}"
+    puts "#{r[:incident_key]}: #{r[:fixed]} out of #{r[:count]} alerts would not have been " \
+         "generated with a threshold of #{r[:formatted_threshold]}"
   end
-  puts "Total: #{fixed} out of #{total} alerts would not have been generated over " +
-          "#{incident_key_total} incident_keys"
+  puts "Total: #{fixed} out of #{total} alerts would not have been generated over " \
+       "#{incident_key_total} incident_keys"
 end
 
 use_log_level_option

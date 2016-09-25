@@ -1,22 +1,10 @@
-# Rocketships!
-HashSyntax:
-  EnforcedStyle: hash_rockets
-
-# Enforce spaces within Braces
-Style/SpaceInsideHashLiteralBraces:
-  EnforcedStyle: space
-
-# Numbers without underscores, please.
+# Numbers with underscores, please.
 Style/NumericLiterals:
-  Enabled: false
+  Enabled: true
 
-# Allow use of "fail", "raise"
-Style/SignalException:
-  Enabled: false
-
-# Allow "not" as well as "!"
-Style/Not:
-  Enabled: false
+# Allow more complex if statements ( if { if { if {} } })
+Metrics/AbcSize:
+  Max: 30
 
 # Allow slightly longer classes
 Metrics/ClassLength:
@@ -30,3 +18,19 @@ Metrics/LineLength:
 # Allow slightly longer methods
 Metrics/MethodLength:
   Max: 50
+
+Style/SpaceInsideHashLiteralBraces:
+  EnforcedStyle: no_space
+  EnforcedStyleForEmptyBraces: no_space
+
+# Rocketships!
+HashSyntax:
+  EnforcedStyle: hash_rockets
+
+# Allow use of "fail", "raise"
+Style/SignalException:
+  Enabled: false
+
+# Allow "not" as well as "!"
+Style/Not:
+  Enabled: false
